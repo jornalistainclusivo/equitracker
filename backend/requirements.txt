@@ -1,0 +1,18 @@
+# Core Framework
+fastapi>=0.109.0  # Latest stable High-performance API
+uvicorn[standard]>=0.27.0  # ASGI server
+
+# Configuration & Utilities
+python-dotenv>=1.0.0  # Load .env files
+pydantic-settings>=2.1.0  # Type-safe settings management
+
+# Database
+neo4j>=5.15.0  # Official Python driver (verified v6.0 is out, but 5.x is robust/LTS)
+
+# AI & Scraping
+crawl4ai  # Async web scaping (uses Playwright)
+langchain>=0.1.0  # Standard orchestration
+
+# Testing (Optional but recommended)
+pytest
+httpx

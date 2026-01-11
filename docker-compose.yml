@@ -7,12 +7,12 @@ services:
       - "7474:7474" # HTTP
       - "7687:7687" # Bolt
     environment:
-      - NEO4J_AUTH=${NEO4J_PASSWORD}
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD}
       - NEO4J_PLUGINS=["apoc"]
       # Windows/WSL2 Memory Constraints
-      - NEO4J_server_memory_pagecache_size=512M
-      - NEO4J_server_memory_heap_initial_size=512M
-      - NEO4J_server_memory_heap_max_size=1G
+      # - NEO4J_server_memory_pagecache_size=512M
+      # - NEO4J_server_memory_heap_initial_size=512M
+      # - NEO4J_server_memory_heap_max_size=1G
     volumes:
       - ./data/neo4j:/data
       - ./data/logs:/logs
