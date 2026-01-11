@@ -1,9 +1,22 @@
+import os
+import sys
+import logging
+from pathlib import Path
+from dotenv import load_dotenv
 from neo4j import GraphDatabase, AsyncGraphDatabase
 from neo4j.exceptions import ServiceUnavailable, AuthError
-from app.core.config import settings
-import logging
 
+# Path Resolution
+ROOT_DIR = Path(__file__).resolve().parents[3]
+# load_dotenv(ROOT_DIR / ".env")
+
+# Logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.info(f"🔍 Project Root detected at: {ROOT_DIR}")
+
+# Load Environment
+load_dotenv(ROOT_DIR / ".env")
 
 class Neo4jConnection:
     _instance = None
@@ -19,13 +32,21 @@ class Neo4jConnection:
         if self.driver:
             return
 
+        uri = os.getenv("NEO4J_URI", "bolt://127.0.0.1:7687")
+        user = os.getenv("NEO4J_USER", "neo4j")
+        password = os.getenv("NEO4J_PASSWORD")
+
+        if password is None:
+            logger.fatal("NEO4J_PASSWORD is not set in environment variables.")
+            raise Exception("NEO4J_PASSWORD is not set.")
+
         try:
             # Using AsyncGraphDatabase for FastAPI async support
             self.driver = AsyncGraphDatabase.driver(
-                settings.NEO4J_URI,
-                auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
+                uri,
+                auth=(user, password)
             )
-            logger.info("Neo4j driver initialized.")
+            logger.info(f"Neo4j driver initialized with URI: {uri}")
         except Exception as e:
             logger.error(f"Failed to initialize Neo4j driver: {e}")
             raise e
@@ -33,8 +54,12 @@ class Neo4jConnection:
     async def verify_connectivity(self) -> bool:
         """Verifies connection to the database."""
         if not self.driver:
-            logger.warning("Neo4j driver is not initialized.")
-            return False
+            # Try to connect if not connected
+            try:
+                self.connect()
+            except Exception:
+                logger.warning("Neo4j driver is not initialized and connection attempt failed.")
+                return False
             
         try:
             async with self.driver.session() as session:
