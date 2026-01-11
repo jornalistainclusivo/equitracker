@@ -30,6 +30,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+from app.api.api import api_router
+app.include_router(api_router, prefix="/api/v1")
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint to verify backend and database status."""
