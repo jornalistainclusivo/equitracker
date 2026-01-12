@@ -135,3 +135,30 @@ class SourceRepository:
         """
         async with self.driver.session() as session:
             await session.run(query, uid=uid, content=content)
+
+    async def update_summary(self, uid: str, summary: str):
+        """
+        Updates the summary of a Source node.
+        """
+        query = """
+        MATCH (s:Source {uid: $uid})
+        SET s.summary = $summary, s.last_summarized_at = datetime()
+        RETURN s
+        """
+        async with self.driver.session() as session:
+            await session.run(query, uid=uid, summary=summary)
+
+    async def get_source_content(self, uid: str) -> Optional[str]:
+        """
+        Retrieves the content of a Source node.
+        """
+        query = """
+        MATCH (s:Source {uid: $uid})
+        RETURN s.content as content
+        """
+        async with self.driver.session() as session:
+            result = await session.run(query, uid=uid)
+            record = await result.single()
+            if not record:
+                return None
+            return record["content"]

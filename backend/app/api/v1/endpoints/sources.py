@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from app.schemas.source import SourceCreate, SourceResponse
 from app.repositories.source_repo import SourceRepository
 from app.services.crawler import CrawlerService
+from app.services.llm import OllamaService
 
 router = APIRouter()
 repo = SourceRepository()
@@ -45,6 +46,29 @@ async def crawl_source(uid: str):
         await repo.update_content(uid, content)
         
         return {"status": "success", "length": len(content)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{uid}/summarize")
+async def summarize_source(uid: str):
+    """
+    Summarize a source by UID using Ollama.
+    """
+    try:
+        source = await repo.get_source_by_uid(uid)
+        if not source:
+            raise HTTPException(status_code=404, detail="Source not found")
+        
+        content = await repo.get_source_content(uid)
+        if not content:
+             raise HTTPException(status_code=400, detail="Source has no content to summarize. Please crawl it first.")
+
+        summary = await OllamaService.summarize(content)
+        await repo.update_summary(uid, summary)
+        
+        return {"status": "success", "summary_length": len(summary), "preview": summary[:100] + "..."}
     except HTTPException:
         raise
     except Exception as e:
