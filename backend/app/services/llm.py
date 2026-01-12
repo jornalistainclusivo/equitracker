@@ -4,7 +4,7 @@ from typing import Optional
 class OllamaService:
     OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
     MODEL = "llama3:latest"
-    TIMEOUT = 60.0
+    TIMEOUT = 180.0
 
     @classmethod
     async def summarize(cls, text: str) -> str:
