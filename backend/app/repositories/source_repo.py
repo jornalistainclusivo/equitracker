@@ -96,3 +96,42 @@ class SourceRepository:
                     created_at=created_at
                 ))
             return sources
+
+    async def get_source_by_uid(self, uid: str) -> Optional[SourceResponse]:
+        """
+        Retrieves a Source node by UID.
+        """
+        query = """
+        MATCH (s:Source {uid: $uid})
+        RETURN s
+        """
+        async with self.driver.session() as session:
+            result = await session.run(query, uid=uid)
+            record = await result.single()
+            if not record:
+                return None
+            
+            node = record["s"]
+            created_at_neo4j = node.get("created_at")
+            created_at = created_at_neo4j.to_native() if hasattr(created_at_neo4j, 'to_native') else created_at_neo4j
+
+            return SourceResponse(
+                name=node.get("name"),
+                url=node.get("url"),
+                reliability=node.get("reliability"),
+                notes=node.get("notes"),
+                uid=node.get("uid"),
+                created_at=created_at
+            )
+
+    async def update_content(self, uid: str, content: str):
+        """
+        Updates the content of a Source node.
+        """
+        query = """
+        MATCH (s:Source {uid: $uid})
+        SET s.content = $content, s.last_scraped_at = datetime()
+        RETURN s
+        """
+        async with self.driver.session() as session:
+            await session.run(query, uid=uid, content=content)

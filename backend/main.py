@@ -4,6 +4,7 @@ from app.core.config import settings
 from app.core.database import db
 import logging
 
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
