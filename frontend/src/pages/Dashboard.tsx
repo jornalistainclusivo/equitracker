@@ -27,8 +27,8 @@ const Dashboard = () => {
                 const data = Array.isArray(response.data) ? response.data : response.data.sources || [];
                 setSources(data);
             } catch (err) {
-                setError('Failed to fetch sources');
-                console.error(err);
+                console.error("🔥 FULL NETWORK ERROR:", err);
+                setError("Connection Failed: Check Console (F12)");
             } finally {
                 setLoading(false);
             }

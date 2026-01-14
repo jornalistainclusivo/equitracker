@@ -31,6 +31,15 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# 🔓 SECURITY NOTE: Wildcard allowed for dev debugging to fix "No Access-Control-Allow-Origin"
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow ALL origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow ALL methods (GET, POST, etc)
+    allow_headers=["*"],  # Allow ALL headers
+)
+
 from app.api.api import api_router
 app.include_router(api_router, prefix="/api/v1")
 
