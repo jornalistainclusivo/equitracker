@@ -148,6 +148,18 @@ class SourceRepository:
         async with self.driver.session() as session:
             await session.run(query, uid=uid, summary=summary)
 
+    async def update_reliability(self, uid: str, reliability: float):
+        """
+        Updates the reliability score of a Source node.
+        """
+        query = """
+        MATCH (s:Source {uid: $uid})
+        SET s.reliability = $reliability, s.last_analyzed_at = datetime()
+        RETURN s
+        """
+        async with self.driver.session() as session:
+            await session.run(query, uid=uid, reliability=reliability)
+            
     async def get_source_content(self, uid: str) -> Optional[str]:
         """
         Retrieves the content of a Source node.

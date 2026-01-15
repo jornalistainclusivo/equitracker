@@ -1,7 +1,8 @@
 export interface Source {
     name: string;
     url: string;
-    reliability_score: number;
+    reliability: number;
+    uid: string;
 }
 
 export interface SourceResponse {

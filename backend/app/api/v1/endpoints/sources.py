@@ -73,3 +73,27 @@ async def summarize_source(uid: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{uid}/analyze")
+async def analyze_source(uid: str):
+    """
+    Analyze reliability of a source by UID.
+    For now, this is a mock implementation that assigns a random high score.
+    """
+    import random
+    try:
+        source = await repo.get_source_by_uid(uid)
+        if not source:
+            raise HTTPException(status_code=404, detail="Source not found")
+        
+        # Mock analysis logic: valid sources are mostly reliable
+        # In a real scenario, this would call an LLM or Check logic
+        mock_score = random.uniform(0.7, 0.95)
+        
+        await repo.update_reliability(uid, mock_score)
+        
+        return {"status": "success", "reliability": mock_score}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
