@@ -1,4 +1,4 @@
-# 🌍 EquiTracker | v0.3 Alpha (Sovereign & Local)
+# 🌍 EquiTracker | v2.0 (Hybrid & Sovereign)
 
 **Data:** 11/01/2026
 **Status:** Ready for Development
@@ -6,8 +6,8 @@
 
 ## 🎯 1. Visão Geral e Mudança de Paradigma
 
-* **A Evolução:** Saímos de uma arquitetura "híbrida" para uma arquitetura **"Local-First"**.
-* **A Promessa (Refinada):** "Soberania Radical". Não alugamos inteligência, nós a hospedamos. O EquiTracker v0.3 roda o ciclo completo de inteligência (Coleta -> Análise -> Armazenamento) dentro da sua máquina, sem enviar metadados de vetores para terceiros.
+* **The Shift:** We have solidified our strategy around a **"Hybrid Architecture"**.
+* **The Promise (Refined):** "Radical Sovereignty". We host intelligence locally. EquiTracker v2.0 runs the full intelligence cycle (Collection -> Analysis -> Storage) on your machine.
 * **Viabilidade Econômica:** Custo de operação próximo de zero (apenas consumo de energia local e chamadas de API do LLM).
 * **Viabilidade Técnica no Windows:** Unificação de serviços. Em vez de rodar múltiplos bancos (Neo4j + Pinecone + Redis), usaremos o **Neo4j 5.x** para **TUDO** (Grafo + Vetores), economizando RAM do WSL2.
 
@@ -34,9 +34,30 @@ Esta stack foi escolhida para ser orquestrada por Agentes de IA no VS Code.
 * **Triagem Rápida:** Google Gemini 1.5 Flash (Baixa latência).
 * **Embeddings:** `text-embedding-3-small` (OpenAI) ou `models/embedding-001` (Google) - *Custo irrisório*.
 
+* **Embeddings:** `text-embedding-3-small` (OpenAI) or `models/embedding-001` (Google) - *Low cost*.
+
 ---
 
-## 🧠 3. Arquitetura Lógica: GraphRAG Local
+## 🏗️ 3. Technical Architecture (Hybrid Strategy)
+
+* **Database:** Docker Container (Neo4j) - *Strict Memory Limits Required*.
+* **Backend:** Local Python Process (FastAPI) - *Must access Host Ollama*.
+* **Frontend:** Local Node Process (Vite) - *Must support Hot Module Replacement*.
+
+## 🚦 4. Non-Functional Requirements (Constraints)
+
+* **Local LLM:** System MUST communicate with local Ollama instance.
+* **WSL2 Optimization:** Development stack MUST NOT exceed 50% of available host RAM.
+* **Language:** Primary Interface Language is **Portuguese (pt-BR)**.
+
+## 🚫 EXPLICIT NON-GOALS (The Anti-Traps)
+
+* **DO NOT** containerize Backend or Frontend for Development environment.
+* **DO NOT** implement complex Docker networking (host.internal) unless critical.
+
+---
+
+## 🧠 5. Previous Architecture Notes (GraphRAG Local)
 
 O maior desafio técnico é o GraphRAG. Aqui está como seus agentes devem construí-lo:
 
@@ -55,7 +76,7 @@ O maior desafio técnico é o GraphRAG. Aqui está como seus agentes devem const
 
 ---
 
-## ⚡ 4. Roteiro de Implementação (Focado em Agentes)
+## ⚡ 6. Roteiro de Implementação (Focado em Agentes)
 
 Use estes passos para guiar o Copilot/Antigravity.
 
@@ -98,7 +119,7 @@ Use estes passos para guiar o Copilot/Antigravity.
 
 ---
 
-## 🛡️ 5. Configuração Crítica de Windows (WSL2)
+## 🛡️ 7. Configuração Crítica de Windows (WSL2)
 
 Antes de começar, você **precisa** garantir que o Docker não trave seu computador. Isso é pré-requisito para rodar o GraphRAG localmente.
 
@@ -116,7 +137,7 @@ localhostForwarding=true
 
 ---
 
-## 🧪 6. Métricas de Sucesso do MVP (v0.3)
+## 🧪 8. Métricas de Sucesso do MVP (v0.3)
 
 1. **Zero Crash:** O ambiente Docker roda por 24h sem reiniciar o WSL2.
 2. **Custo Zero de Ingestão:** O sistema lê 50 URLs/dia usando processamento local (Crawl4AI) em vez de APIs pagas.
