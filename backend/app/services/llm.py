@@ -1,5 +1,9 @@
 import httpx
+import logging
 from typing import Optional
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 class OllamaService:
     OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
@@ -31,9 +35,12 @@ class OllamaService:
                 result = response.json()
                 return result.get("response", "")
 
-        except httpx.ConnectError:
+        except httpx.ConnectError as e:
+            logger.error(f"Ollama connection failed: {e}")
             raise Exception("Failed to connect to Ollama. Ensure it is running on http://127.0.0.1:11434")
-        except httpx.TimeoutException:
+        except httpx.TimeoutException as e:
+            logger.error(f"Ollama request timed out: {e}")
             raise Exception(f"Ollama request timed out after {cls.TIMEOUT} seconds")
         except Exception as e:
+            logger.error(f"Ollama summarization failed with unexpected error: {e}")
             raise Exception(f"Ollama summarization failed: {str(e)}")
