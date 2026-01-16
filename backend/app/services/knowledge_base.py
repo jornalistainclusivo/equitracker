@@ -2,7 +2,7 @@ import os
 from typing import List, Optional
 from langchain_ollama import OllamaEmbeddings
 from langchain_community.vectorstores import Neo4jVector
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.graphs import Neo4jGraph
 from app.core.config import settings
 
