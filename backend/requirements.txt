@@ -16,3 +16,4 @@ langchain==0.1.0  # Standard orchestration
 # Testing (Optional but recommended)
 pytest==9.0.2
 httpx==0.28.1
+playwright==1.49.1

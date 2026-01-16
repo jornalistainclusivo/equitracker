@@ -2,7 +2,7 @@ from typing import List
 from fastapi import APIRouter, HTTPException
 from app.schemas.source import SourceCreate, SourceResponse
 from app.repositories.source_repo import SourceRepository
-from app.services.crawler import CrawlerService
+from app.services.scraper import SovereignScraper
 from app.services.llm import OllamaService
 
 router = APIRouter()
@@ -42,7 +42,7 @@ async def crawl_source(uid: str):
         if not source.url:
              raise HTTPException(status_code=400, detail="Source has no URL")
 
-        content = await CrawlerService.scrape_url(source.url)
+        content = await SovereignScraper.scrape_url(source.url)
         await repo.update_content(uid, content)
         
         return {"status": "success", "length": len(content)}
