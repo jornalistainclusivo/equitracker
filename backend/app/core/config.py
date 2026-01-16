@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     NEO4J_USER: str = "neo4j"
     NEO4J_PASSWORD: str = "password"
 
+    # AI
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(__file__), "../../../.env"),
         env_file_encoding="utf-8",

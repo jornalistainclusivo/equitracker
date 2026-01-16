@@ -78,21 +78,43 @@ async def summarize_source(uid: str):
 async def analyze_source(uid: str):
     """
     Analyze reliability of a source by UID.
-    For now, this is a mock implementation that assigns a random high score.
+    Flow: Scrape -> Vectorize -> Reliability Analysis
     """
     import random
+    from app.services.knowledge_base import KnowledgeBase
+
     try:
         source = await repo.get_source_by_uid(uid)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
         
+        # 1. Scrape content
+        # We ensure content is fresh or at least available.
+        # If url is missing, we can't scrape, but if content exists we might rely on it.
+        # Assuming URL is required for scraping.
+        if not source.url:
+             raise HTTPException(status_code=400, detail="Source has no URL for analysis")
+
+        content = await SovereignScraper.scrape_url(source.url)
+        # Put content in DB
+        await repo.update_content(uid, content)
+        
+        # 2. Vectorize & Store
+        kb = KnowledgeBase()
+        await kb.vectorize_and_store(content, uid)
+
+        # 3. Reliability Analysis (Mock)
         # Mock analysis logic: valid sources are mostly reliable
         # In a real scenario, this would call an LLM or Check logic
         mock_score = random.uniform(0.7, 0.95)
         
         await repo.update_reliability(uid, mock_score)
         
-        return {"status": "success", "reliability": mock_score}
+        return {
+            "status": "success", 
+            "reliability": mock_score,
+            "vectorization": "completed"
+        }
     except HTTPException:
         raise
     except Exception as e:
