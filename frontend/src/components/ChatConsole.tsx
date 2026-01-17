@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Send, Bot, User, X, Maximize2, Minimize2 } from 'lucide-react';
+import { Send, Bot, User, X, Maximize2, Minimize2, Trash2, Copy, Download, Square, Check } from 'lucide-react';
 import api from '../services/api';
 
 interface Message {
@@ -20,6 +20,15 @@ const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, onClose
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isCopied, setIsCopied] = useState(false);
+
+    const quickPrompts = [
+        { label: "🔍 Resumo Executivo", text: "Gere um resumo executivo desta matéria focando nos principais atores e fatos." },
+        { label: "⚖️ Checar Viés (LBI)", text: "Analise a matéria sob a ótica da LBI (Lei Brasileira de Inclusão) e identifique possíveis vieses capacitistas." },
+        { label: "📜 Contexto Legal", text: "Quais são os marcos legais e direitos humanos citados ou omitidos nesta narrativa?" },
+        { label: "💡 Sugerir Pauta Inclusiva", text: "Com base neste texto, sugira pautas complementares que tragam uma perspectiva mais inclusiva e diversa." },
+        { label: "🔎 Quem financia?", text: "Existem informações ou pistas sobre o financiamento e interesses econômicos por trás deste veículo ou desta cobertura?" }
+    ];
 
     // Auto-prompt effect when source changes
     useEffect(() => {
@@ -59,12 +68,13 @@ const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, onClose
         }
     };
 
-    const handleSend = async (e?: React.FormEvent) => {
+    const handleSend = async (e?: React.FormEvent, customText?: string) => {
         e?.preventDefault();
-        if (!input.trim() || isLoading) return;
+        const textToSend = customText || input;
+        if (!textToSend.trim() || isLoading) return;
 
-        const userMessage = input.trim();
-        setInput('');
+        const userMessage = textToSend.trim();
+        if (!customText) setInput('');
         setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         setIsLoading(true);
 
@@ -80,6 +90,40 @@ const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, onClose
             setMessages(prev => [...prev, { role: 'assistant', content: "Desculpe, ocorreu um erro ao processar sua pergunta." }]);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const clearChat = () => {
+        if (window.confirm("Tem certeza que deseja limpar todo o histórico desta conversa?")) {
+            setMessages([]);
+        }
+    };
+
+    const copyChat = () => {
+        const text = messages.map(m => `${m.role === 'user' ? 'VOCÊ' : 'IA'}:\n${m.content}`).join('\n\n---\n\n');
+        navigator.clipboard.writeText(text);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+    };
+
+    const downloadChat = () => {
+        const text = `# Análise EquiTracker: ${sourceName}\n\n` +
+            messages.map(m => `### ${m.role === 'user' ? 'Usuário' : 'EquiTracker IA'}\n${m.content}`).join('\n\n---\n\n');
+
+        const blob = new Blob([text], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const filename = `analise-${sourceName.toLowerCase().replace(/\s+/g, '-')}.md`;
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
         }
     };
 
@@ -99,6 +143,32 @@ const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, onClose
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    {/* Toolbar Actions */}
+                    <div className="flex items-center gap-1 mr-4 border-r border-white/10 pr-4">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); clearChat(); }}
+                            className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                            title="Limpar Conversa"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); copyChat(); }}
+                            className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white flex items-center gap-1.5"
+                            title="Copiar Texto"
+                        >
+                            {isCopied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                            {isCopied && <span className="text-[10px] uppercase font-bold text-green-400">Copiado!</span>}
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); downloadChat(); }}
+                            className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                            title="Baixar Markdown"
+                        >
+                            <Download className="w-4 h-4" />
+                        </button>
+                    </div>
+
                     <button
                         onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
                         className="p-1.5 hover:bg-white/10 rounded-full transition-colors"
@@ -171,26 +241,43 @@ const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, onClose
                         <div ref={messagesEndRef} />
                     </div>
 
-                    {/* Input */}
+                    {/* Input Area */}
                     <div className="p-4 bg-white border-t border-gray-100">
+                        {/* Quick Prompts */}
+                        <div className="max-w-4xl mx-auto w-full mb-3 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                            {quickPrompts.map((chip, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => handleSend(undefined, chip.text)}
+                                    className="whitespace-nowrap px-3 py-1.5 rounded-full border border-gray-200 text-xs font-medium text-gray-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all flex items-center gap-1.5 shadow-sm"
+                                    disabled={isLoading}
+                                >
+                                    {chip.label}
+                                </button>
+                            ))}
+                        </div>
+
                         <form onSubmit={handleSend} className="max-w-4xl mx-auto w-full relative">
-                            <input
-                                type="text"
+                            <textarea
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={handleKeyDown}
                                 placeholder="Envie um comando ou pergunta para o sistema..."
-                                className="w-full bg-gray-50 text-gray-900 placeholder-gray-400 border border-gray-200 rounded-xl py-3 pl-5 pr-14 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
+                                className="w-full bg-gray-50 text-gray-900 placeholder-gray-400 border border-gray-200 rounded-xl py-3 pl-5 pr-14 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm resize-none min-h-[48px] max-h-[120px]"
+                                rows={1}
                                 disabled={isLoading}
                             />
                             <button
                                 type="submit"
-                                disabled={!input.trim() || isLoading}
-                                className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all ${!input.trim() || isLoading
+                                disabled={(!input.trim() && !isLoading) || (isLoading && false)} // Button is always active if loading to show "Stop"
+                                className={`absolute right-2 bottom-3 p-2 rounded-lg transition-all ${!input.trim() && !isLoading
                                     ? 'text-gray-300 cursor-not-allowed'
-                                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+                                    : isLoading
+                                        ? 'bg-red-500 text-white hover:bg-red-600 shadow-sm'
+                                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
                                     }`}
                             >
-                                <Send className="w-4 h-4" />
+                                {isLoading ? <Square className="w-4 h-4 fill-current" /> : <Send className="w-4 h-4" />}
                             </button>
                         </form>
                     </div>
