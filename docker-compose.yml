@@ -8,6 +8,8 @@ services:
       - "7687:7687" # Bolt
     environment:
       - NEO4J_AUTH=neo4j/equitracker123
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
       # Safe Limits for Dev (Total ~1GB)
       - NEO4J_server_memory_heap_initial__size=512m
       - NEO4J_server_memory_heap_max__size=512m
