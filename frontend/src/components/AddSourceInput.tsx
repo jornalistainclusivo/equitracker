@@ -1,38 +1,82 @@
 import { useState } from 'react';
-import { Plus, Search, Loader2 } from 'lucide-react';
+import { ArrowRight, Globe, Loader2, AlertCircle } from 'lucide-react';
 import api from '../services/api';
 
 interface AddSourceInputProps {
     onSourceAdded: () => void;
 }
 
+interface ApiError {
+    response?: {
+        data?: {
+            detail?: string | Array<{ msg: string }>;
+        };
+    };
+    message?: string;
+}
+
 const AddSourceInput = ({ onSourceAdded }: AddSourceInputProps) => {
     const [url, setUrl] = useState('');
     const [loading, setLoading] = useState(false);
     const [submittingStatus, setSubmittingStatus] = useState<string>('');
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+    const extractDomain = (url: string): string => {
+        try {
+            const hostname = new URL(url).hostname;
+            return hostname.replace('www.', '');
+        } catch {
+            return 'Fonte Desconhecida';
+        }
+    };
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!url.trim()) return;
 
         setLoading(true);
-        setSubmittingStatus('Adicionando...');
+        setSubmittingStatus('Validando...');
+        setErrorMsg(null);
 
         try {
-            // 1. Create source
-            const createRes = await api.post('/sources/', { url });
+            const name = extractDomain(url);
+
+            // 1. Create source with full payload required by Backend
+            const payload = {
+                url: url,
+                name: name,
+                reliability: 0.5, // Default initial value required by schema
+                notes: "Adicionado via Dashboard"
+            };
+
+            const createRes = await api.post('/sources/', payload);
             const newUid = createRes.data.uid;
 
             // 2. Trigger analysis
-            setSubmittingStatus('Analisando...');
+            setSubmittingStatus('Analisando confiabilidade...');
             await api.post(`/sources/${newUid}/analyze`);
 
             // 3. Refresh list
             onSourceAdded();
             setUrl('');
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Failed to add source:", error);
-            alert("Erro ao adicionar fonte. Verifique a URL e tente novamente.");
+            const err = error as ApiError;
+
+            let displayMsg = "Erro ao adicionar fonte.";
+
+            if (err.response?.data?.detail) {
+                const detail = err.response.data.detail;
+                if (Array.isArray(detail)) {
+                    displayMsg = detail.map(d => d.msg).join(', ');
+                } else {
+                    displayMsg = String(detail);
+                }
+            } else if (err.message) {
+                displayMsg = err.message;
+            }
+
+            setErrorMsg(displayMsg);
         } finally {
             setLoading(false);
             setSubmittingStatus('');
@@ -40,39 +84,53 @@ const AddSourceInput = ({ onSourceAdded }: AddSourceInputProps) => {
     };
 
     return (
-        <form onSubmit={handleAdd} className="mb-8 w-full max-w-2xl mx-auto">
-            <div className="relative flex items-center">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-5 w-5 text-gray-400" />
+        <div className="py-12 px-4 mb-8 bg-gradient-to-b from-gray-50 to-white rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <Globe className="w-6 h-6 text-blue-600" />
+                Verifique a Confiabilidade da Notícia
+            </h2>
+
+            <form onSubmit={handleAdd} className="w-full max-w-2xl relative">
+                <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Globe className="h-6 w-6 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                    </div>
+                    <input
+                        type="url"
+                        className="block w-full pl-12 pr-36 h-14 text-lg border-2 border-gray-200 rounded-full leading-5 bg-white placeholder-gray-400 focus:outline-none focus:placeholder-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
+                        placeholder="Cole a URL da notícia aqui..."
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        disabled={loading}
+                        required
+                    />
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="absolute inset-y-1.5 right-1.5 px-6 rounded-full text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                    >
+                        {loading ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                {submittingStatus || 'Processando'}
+                            </>
+                        ) : (
+                            <>
+                                Analisar
+                                <ArrowRight className="w-5 h-5" />
+                            </>
+                        )}
+                    </button>
                 </div>
-                <input
-                    type="url"
-                    className="block w-full pl-10 pr-32 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm shadow-sm transition-all"
-                    placeholder="Cole a URL da notícia ou site..."
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    disabled={loading}
-                    required
-                />
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="absolute inset-y-1 right-1 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
-                >
-                    {loading ? (
-                        <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            {submittingStatus}
-                        </>
-                    ) : (
-                        <>
-                            <Plus className="w-4 h-4" />
-                            Adicionar e Analisar
-                        </>
-                    )}
-                </button>
-            </div>
-        </form>
+            </form>
+
+            {errorMsg && (
+                <div className="mt-4 flex items-center gap-2 text-red-600 bg-red-50 px-4 py-2 rounded-lg text-sm font-medium animate-in fade-in slide-in-from-top-2">
+                    <AlertCircle className="w-4 h-4" />
+                    {errorMsg}
+                </div>
+            )}
+        </div>
     );
 };
 
