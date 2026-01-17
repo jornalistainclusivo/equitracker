@@ -47,18 +47,40 @@ async def chat_with_source(request: ChatRequest):
         # 3. Initialize LLM
         llm = ChatOllama(
             base_url=settings.OLLAMA_BASE_URL,
-            model="gemma:2b", 
+            model="deepseek-r1:8b", 
             temperature=0.1
         )
 
         # 4. Create Prompt Template
-        prompt = ChatPromptTemplate.from_template("""Answer the following question based only on the provided context:
+        prompt = ChatPromptTemplate.from_template("""
+You are the EquiTracker Intelligence, specialized in analyzing media through the lens of Human Rights, Intersectionality, and Anti-Ableism (LBI - Lei Brasileira de Inclusão).
 
-<context>
+CONTEXT FROM SOURCE:
 {context}
-</context>
 
-Question: {input}""")
+USER QUERY:
+{input}
+
+INSTRUCTIONS:
+Analyze the provided context strictly. Use your chain-of-thought to verify:
+1. **Language:** Are there euphemisms (e.g., "special needs") or capacitist terms?
+2. **Agency:** are PwD (People with Disabilities) portrayed as objects of pity/overcoming or as subjects of rights?
+3. **Legislation:** Does the content align with the principles of the LBI (autonomy, accessibility)?
+
+OUTPUT FORMAT (Markdown):
+Using Portuguese (Brazil), provide a structured response (do not output the internal reasoning trace in the final response, just the result):
+
+## 🎯 Análise Objetiva
+[Direct answer to the user query]
+
+## 👁️ Lupa de Equidade (JINC)
+* **Viés Detectado:** [Point out specific terms or framings]
+* **Pontos Fortes:** [What did the text get right?]
+* **Contexto Legal:** [Connection to LBI or Human Rights]
+
+## 💡 Sugestão de Enquadramento
+[How to rewrite/improve this narrative]
+""")
 
         # 5. Create Document Chain (Stuff)
         document_chain = create_stuff_documents_chain(llm, prompt)
