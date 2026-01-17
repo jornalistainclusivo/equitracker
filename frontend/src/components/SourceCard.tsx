@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Globe, MessageSquare } from 'lucide-react';
 import { Source } from '../types';
 import StatusBadge from './StatusBadge';
-import SourceChat from './SourceChat';
+
 
 interface SourceCardProps {
     source: Source;

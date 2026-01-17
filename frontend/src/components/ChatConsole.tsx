@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Send, Bot, User, X, Maximize2, Minimize2 } from 'lucide-react';
 import api from '../services/api';
 
@@ -137,10 +138,12 @@ const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, onClose
                                 )}
 
                                 <div className={`max-w-[75%] rounded-2xl px-6 py-4 text-[15px] shadow-sm leading-relaxed ${msg.role === 'user'
-                                        ? 'bg-blue-600 text-white rounded-tr-sm'
-                                        : 'bg-white text-gray-800 border border-gray-200 rounded-tl-sm'
+                                    ? 'bg-blue-600 text-white rounded-tr-sm'
+                                    : 'bg-white text-gray-800 border border-gray-200 rounded-tl-sm'
                                     }`}>
-                                    <p className="whitespace-pre-wrap font-sans">{msg.content}</p>
+                                    <div className="prose prose-sm max-w-none dark:prose-invert prose-p:leading-relaxed prose-pre:bg-gray-800 prose-pre:text-gray-100">
+                                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                    </div>
                                 </div>
 
                                 {msg.role === 'user' && (
@@ -183,8 +186,8 @@ const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, onClose
                                 type="submit"
                                 disabled={!input.trim() || isLoading}
                                 className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all ${!input.trim() || isLoading
-                                        ? 'text-gray-300 cursor-not-allowed'
-                                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+                                    ? 'text-gray-300 cursor-not-allowed'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
                                     }`}
                             >
                                 <Send className="w-4 h-4" />
