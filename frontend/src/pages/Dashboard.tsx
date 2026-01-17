@@ -3,10 +3,12 @@ import { ShieldAlert, Globe } from 'lucide-react';
 import api from '../services/api';
 import SourceCard from '../components/SourceCard';
 import AddSourceInput from '../components/AddSourceInput';
+import ChatConsole from '../components/ChatConsole';
 import { Source } from '../types';
 
 const Dashboard = () => {
     const [sources, setSources] = useState<Source[]>([]);
+    const [activeChatSource, setActiveChatSource] = useState<{ id: string, name: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +51,10 @@ const Dashboard = () => {
         }
     };
 
+    const handleChatOpen = (uid: string, name: string) => {
+        setActiveChatSource({ id: uid, name });
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-screen bg-gray-50" aria-live="polite">
@@ -88,10 +94,23 @@ const Dashboard = () => {
                 >
                     {sources.map((source) => (
                         <div key={source.uid || source.name} role="listitem">
-                            <SourceCard source={source} onAnalyze={handleAnalyze} />
+                            <SourceCard
+                                source={source}
+                                onAnalyze={handleAnalyze}
+                                onChatOpen={handleChatOpen}
+                                isActiveChat={activeChatSource?.id === source.uid}
+                            />
                         </div>
                     ))}
                 </div>
+
+                {activeChatSource && (
+                    <ChatConsole
+                        sourceId={activeChatSource.id}
+                        sourceName={activeChatSource.name}
+                        onClose={() => setActiveChatSource(null)}
+                    />
+                )}
             </main>
         </div>
     );
