@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ShieldAlert, Globe } from 'lucide-react';
 import api from '../services/api';
 import SourceCard from '../components/SourceCard';
+import AddSourceInput from '../components/AddSourceInput';
 import { Source } from '../types';
 
 const Dashboard = () => {
@@ -77,6 +78,8 @@ const Dashboard = () => {
                     </h1>
                     <p className="text-gray-500 mt-2">Rastreamento de confiabilidade jornalística</p>
                 </header>
+
+                <AddSourceInput onSourceAdded={fetchSources} />
 
                 <div
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
