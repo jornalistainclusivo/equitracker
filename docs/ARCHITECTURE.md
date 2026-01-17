@@ -46,7 +46,7 @@ The communication between the React Frontend and FastAPI Backend is strictly typ
 
 ### 3.1. Source Object
 
-* **Backend (`app.schemas.source.SourceResponse`)**:
+- **Backend (`app.schemas.source.SourceResponse`)**:
 
     ```python
     class SourceResponse(BaseModel):
@@ -57,7 +57,7 @@ The communication between the React Frontend and FastAPI Backend is strictly typ
         # ... other fields
     ```
 
-* **Frontend Data Shape**:
+- **Frontend Data Shape**:
 
     ```typescript
     interface Source {
@@ -70,7 +70,8 @@ The communication between the React Frontend and FastAPI Backend is strictly typ
 
 ### 3.2. Reliability Analysis
 
-* **Input**: Scraped Content + Source Metadata.
+- **Input**: Scraped Content + Source Metadata.
+
 - **Process**: The system calculates a reliability score (currently a placeholder/mock, roadmap includes LLM-based evaluation).
 - **Output**: A float score (0.0 to 1.0) stored on the `Source` node in Neo4j.
 - **Technical Debt Note**: The reliability logic currently mocks a random score (`random.uniform(0.7, 0.95)`) in `app.api.v1.endpoints.sources.analyze_source`. This needs to be replaced with actual LLM evaluation logic.
