@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ShieldAlert, Globe } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ShieldAlert, Globe, ArrowRight, History } from 'lucide-react';
 import api from '../services/api';
 import SourceCard from '../components/SourceCard';
 import AddSourceInput from '../components/AddSourceInput';
@@ -11,13 +12,24 @@ const Dashboard = () => {
     const [activeChatSource, setActiveChatSource] = useState<{ id: string, name: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    // Check if we navigated back from History with a source to open
+    useEffect(() => {
+        if (location.state?.openChatId) {
+            setActiveChatSource({
+                id: location.state.openChatId,
+                name: location.state.openChatName
+            });
+            // Clear location state to avoid re-opening on refresh
+            window.history.replaceState({}, document.title);
+        }
+    }, [location]);
 
     const fetchSources = async () => {
         try {
-            // Strictly typed API response
             const response = await api.get<{ sources: Source[] } | Source[]>('/sources/');
-
-            // Handle potential response variations safely
             let data: Source[] = [];
             if (Array.isArray(response.data)) {
                 data = response.data;
@@ -25,7 +37,8 @@ const Dashboard = () => {
                 data = response.data.sources;
             }
 
-            setSources(data);
+            // Sort by UID descending (proxies for newest first)
+            setSources(data.reverse());
         } catch (err) {
             console.error("🔥 FULL NETWORK ERROR:", err);
             setError("Falha na conexão: Verifique o console (F12)");
@@ -41,12 +54,9 @@ const Dashboard = () => {
     const handleAnalyze = async (uid: string) => {
         try {
             await api.post(`/sources/${uid}/analyze`);
-            // Initial crawl/analysis might just kick off a process, ensuring we refetch to get latest state/score
-            // Using a slight delay or optimistic update could be better, but refetching is safe first step
             await fetchSources();
         } catch (err) {
             console.error("Error analyzing source:", err);
-            // Optionally set error state or show toast
             alert("Erro ao iniciar análise. Verifique o console.");
         }
     };
@@ -74,35 +84,73 @@ const Dashboard = () => {
         );
     }
 
+    // Limit to 3 latest
+    const recentSources = sources.slice(0, 3);
+
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
+        <div className="min-h-screen bg-gray-50 p-8 pb-32">
             <main className="max-w-4xl mx-auto">
-                <header className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                        <Globe className="w-8 h-8 text-blue-600" aria-hidden="true" />
-                        Monitor de Fontes
-                    </h1>
-                    <p className="text-gray-500 mt-2">Rastreamento de confiabilidade jornalística</p>
+                <header className="mb-8 flex justify-between items-start">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                            <Globe className="w-8 h-8 text-blue-600" aria-hidden="true" />
+                            Monitor de Fontes
+                        </h1>
+                        <p className="text-gray-500 mt-2">Rastreamento de confiabilidade jornalística</p>
+                    </div>
                 </header>
 
                 <AddSourceInput onSourceAdded={fetchSources} />
 
-                <div
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                    role="list"
-                    aria-label="Lista de fontes monitoradas"
-                >
-                    {sources.map((source) => (
-                        <div key={source.uid || source.name} role="listitem">
-                            <SourceCard
-                                source={source}
-                                onAnalyze={handleAnalyze}
-                                onChatOpen={handleChatOpen}
-                                isActiveChat={activeChatSource?.id === source.uid}
-                            />
+                <section className="mt-12">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold text-gray-800">Análises Recentes</h2>
+                        {sources.length > 3 && (
+                            <button
+                                onClick={() => navigate('/history')}
+                                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-semibold transition-colors"
+                            >
+                                <History className="w-4 h-4" />
+                                Ver Tudo ({sources.length})
+                            </button>
+                        )}
+                    </div>
+
+                    {recentSources.length > 0 ? (
+                        <>
+                            <div
+                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                role="list"
+                                aria-label="Lista de fontes monitoradas"
+                            >
+                                {recentSources.map((source) => (
+                                    <div key={source.uid || source.name} role="listitem">
+                                        <SourceCard
+                                            source={source}
+                                            onAnalyze={handleAnalyze}
+                                            onChatOpen={handleChatOpen}
+                                            isActiveChat={activeChatSource?.id === source.uid}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-10 flex justify-center">
+                                <button
+                                    onClick={() => navigate('/history')}
+                                    className="flex items-center gap-2 px-8 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-blue-200 hover:text-blue-600 transition-all shadow-sm font-semibold group"
+                                >
+                                    Ver todas as análises anteriores
+                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-300">
+                            <p className="text-gray-400">Nenhuma análise recente disponível.</p>
                         </div>
-                    ))}
-                </div>
+                    )}
+                </section>
 
                 {activeChatSource && (
                     <ChatConsole
