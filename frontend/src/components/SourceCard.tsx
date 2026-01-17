@@ -1,7 +1,8 @@
-import React from 'react';
-import { Globe } from 'lucide-react';
+import React, { useState } from 'react';
+import { Globe, MessageSquare } from 'lucide-react';
 import { Source } from '../types';
 import StatusBadge from './StatusBadge';
+import SourceChat from './SourceChat';
 
 interface SourceCardProps {
     source: Source;
@@ -9,7 +10,8 @@ interface SourceCardProps {
 }
 
 const SourceCard: React.FC<SourceCardProps> = ({ source, onAnalyze }) => {
-    const [isAnalyzing, setIsAnalyzing] = React.useState(false);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(false);
 
     const handleAnalyzeClick = async () => {
         setIsAnalyzing(true);
@@ -41,15 +43,36 @@ const SourceCard: React.FC<SourceCardProps> = ({ source, onAnalyze }) => {
                 {source.url}
             </a>
 
-            <button
-                onClick={handleAnalyzeClick}
-                disabled={isAnalyzing}
-                className={`mt-4 w-full px-4 py-2 text-white rounded-lg transition-colors text-sm font-medium ${isAnalyzing ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-                    }`}
-                aria-label={`Analisar confiabilidade de ${source.name}`}
-            >
-                {isAnalyzing ? 'Analisando...' : 'Analisar Confiabilidade'}
-            </button>
+            <div className="flex gap-2 mt-4">
+                <button
+                    onClick={handleAnalyzeClick}
+                    disabled={isAnalyzing}
+                    className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors text-sm font-medium ${isAnalyzing ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
+                    aria-label={`Analisar confiabilidade de ${source.name}`}
+                >
+                    {isAnalyzing ? 'Analisando...' : 'Analisar'}
+                </button>
+
+                <button
+                    onClick={() => setIsChatOpen(!isChatOpen)}
+                    className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium border ${isChatOpen
+                            ? 'bg-blue-50 border-blue-200 text-blue-700'
+                            : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                        }`}
+                    aria-label={`Chat com ${source.name}`}
+                >
+                    <MessageSquare className="w-5 h-5" />
+                </button>
+            </div>
+
+            {isChatOpen && (
+                <SourceChat
+                    sourceUid={source.uid}
+                    sourceName={source.name}
+                    onClose={() => setIsChatOpen(false)}
+                />
+            )}
         </article>
     );
 };
