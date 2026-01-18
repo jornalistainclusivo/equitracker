@@ -57,17 +57,23 @@ class SourceRepository:
             # We need to convert it.
             
             created_at_neo4j = node.get("created_at")
-            # created_at_neo4j is likely a neo4j.time.DateTime.
-            # We can convert to isoformat or python datetime.
+            if hasattr(created_at_neo4j, 'to_native'):
+                created_at = created_at_neo4j.to_native()
+            else:
+                created_at = created_at_neo4j
             
-            created_at = created_at_neo4j.to_native() if hasattr(created_at_neo4j, 'to_native') else created_at_neo4j
+            if created_at is None:
+                created_at = datetime.now()
+
+            if created_at is None:
+                created_at = datetime.now()
 
             return SourceResponse(
-                name=node.get("name"),
+                name=node.get("name") or "Unknown",
                 url=node.get("url"),
-                reliability=node.get("reliability"),
+                reliability=node.get("reliability") or 0.0,
                 notes=node.get("notes"),
-                uid=node.get("uid"),
+                uid=node.get("uid") or "unknown",
                 created_at=created_at
             )
 
@@ -85,14 +91,23 @@ class SourceRepository:
             async for record in result:
                 node = record["s"]
                 created_at_neo4j = node.get("created_at")
-                created_at = created_at_neo4j.to_native() if hasattr(created_at_neo4j, 'to_native') else created_at_neo4j
+                if hasattr(created_at_neo4j, 'to_native'):
+                     created_at = created_at_neo4j.to_native()
+                else:
+                     created_at = created_at_neo4j
+                
+                if created_at is None:
+                    created_at = datetime.now()
+                
+                if created_at is None:
+                    created_at = datetime.now()
                 
                 sources.append(SourceResponse(
-                    name=node.get("name"),
+                    name=node.get("name") or "Unknown",
                     url=node.get("url"),
-                    reliability=node.get("reliability"),
+                    reliability=node.get("reliability") or 0.0,
                     notes=node.get("notes"),
-                    uid=node.get("uid"),
+                    uid=node.get("uid") or "unknown",
                     created_at=created_at
                 ))
             return sources
@@ -113,14 +128,23 @@ class SourceRepository:
             
             node = record["s"]
             created_at_neo4j = node.get("created_at")
-            created_at = created_at_neo4j.to_native() if hasattr(created_at_neo4j, 'to_native') else created_at_neo4j
+            if hasattr(created_at_neo4j, 'to_native'):
+                 created_at = created_at_neo4j.to_native()
+            else:
+                 created_at = created_at_neo4j
+
+            if created_at is None:
+                created_at = datetime.now()
+
+            if created_at is None:
+                created_at = datetime.now()
 
             return SourceResponse(
-                name=node.get("name"),
+                name=node.get("name") or "Unknown",
                 url=node.get("url"),
-                reliability=node.get("reliability"),
+                reliability=node.get("reliability") or 0.0,
                 notes=node.get("notes"),
-                uid=node.get("uid"),
+                uid=node.get("uid") or "unknown",
                 created_at=created_at
             )
 
