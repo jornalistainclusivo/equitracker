@@ -1,13 +1,13 @@
 import os
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from langchain_ollama import OllamaEmbeddings
 from langchain_community.vectorstores import Neo4jVector
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.graphs import Neo4jGraph
+from langchain_neo4j import Neo4jGraph
 from app.core.config import settings
 
 class KnowledgeBase:
-    def __init__(self):
+    def __init__(self) -> None:
         self.embeddings = OllamaEmbeddings(
             base_url=settings.OLLAMA_BASE_URL,
             model="nomic-embed-text"
@@ -16,7 +16,7 @@ class KnowledgeBase:
         self.username = settings.NEO4J_USER
         self.password = settings.NEO4J_PASSWORD
 
-    async def vectorize_and_store(self, text: str, source_uid: str):
+    async def vectorize_and_store(self, text: str, source_uid: str) -> None:
         """
         Chunks the text, creates embeddings, and stores them in Neo4j.
         Connects chunks to the Source node via HAS_CHUNK relationship.
