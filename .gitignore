@@ -24,3 +24,4 @@ coverage/
 # Docker
 .docker/
 JINC_UNIVERSAL_PROTOCOL.md
+docs/project_status.md
