@@ -43,22 +43,22 @@ The following diagram illustrates the "Sovereign Ingestion" pipeline and the "Hy
 
 ```mermaid
 graph LR
-    URL[Url Input] --> Scraper[Crawl4AI Wrapper]
-    Scraper --> Raw[Raw HTML/Text]
-    
-    subgraph "Sovereign Backend"
+    URL[URL Input] --> Scraper[Crawl4AI Wrapper]
+    Scraper --> Raw[Raw HTML / Text]
+
+    subgraph Sovereign_Backend
         Raw --> LangChain[LangChain Processor]
-        LangChain --> Ollama[Ollama (Local Embeddings)]
+        LangChain --> Ollama[Ollama - Local Embeddings]
         Ollama --> Vectors[Vector Embeddings]
-        Ollama --> GraphData[Key Entities/Relations]
+        Ollama --> GraphData[Key Entities and Relations]
     end
-    
-    subgraph "Hybrid Memory (Neo4j 5.26)"
+
+    subgraph Hybrid_Memory_Neo4j_5_26
         Vectors --> NeoVector[(Vector Index)]
         GraphData --> NeoGraph[(Knowledge Graph)]
         NeoVector -.-> NeoGraph
     end
-    
+
     NeoVector --> API[FastAPI]
     NeoGraph --> API
     API --> UI[React Dashboard]
