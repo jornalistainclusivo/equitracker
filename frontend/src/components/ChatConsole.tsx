@@ -211,7 +211,7 @@ const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, onClose
                                     ? 'bg-blue-600 text-white rounded-tr-sm'
                                     : 'bg-white text-gray-800 border border-gray-200 rounded-tl-sm'
                                     }`}>
-                                    <div className="prose prose-sm max-w-none dark:prose-invert prose-p:leading-relaxed prose-pre:bg-gray-800 prose-pre:text-gray-100">
+                                    <div className={`prose prose-sm max-w-none dark:prose-invert prose-p:leading-relaxed prose-pre:bg-gray-800 prose-pre:text-gray-100 ${msg.role === 'user' ? 'prose-invert text-white' : ''}`}>
                                         <ReactMarkdown>{msg.content}</ReactMarkdown>
                                     </div>
                                 </div>

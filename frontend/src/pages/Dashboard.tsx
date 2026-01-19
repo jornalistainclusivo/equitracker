@@ -94,9 +94,10 @@ const Dashboard = () => {
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
                             <Globe className="w-8 h-8 text-blue-600" aria-hidden="true" />
-                            Monitor de Fontes
+                            EquiTracker SoberanAI
                         </h1>
-                        <p className="text-gray-500 mt-2">Rastreamento de confiabilidade jornalística</p>
+                        <p className="text-gray-500 mt-2">Monitoramento Inteligente de Equidade e Inclusão</p>
+                        <p className="text-gray-500 mt-1 text-sm">Arquitetura de Cérebro Híbrido (Grafos + IA Local) para insights sobre viés sistêmico e padrões de exclusão.</p>
                     </div>
                 </header>
 

@@ -87,7 +87,7 @@ const AddSourceInput = ({ onSourceAdded }: AddSourceInputProps) => {
         <div className="py-12 px-4 mb-8 bg-gradient-to-b from-gray-50 to-white rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                 <Globe className="w-6 h-6 text-blue-600" />
-                Verifique a Confiabilidade da Notícia
+                Auditoria de Viés Interseccional
             </h2>
 
             <form onSubmit={handleAdd} className="w-full max-w-2xl relative">
@@ -98,7 +98,7 @@ const AddSourceInput = ({ onSourceAdded }: AddSourceInputProps) => {
                     <input
                         type="url"
                         className="block w-full pl-12 pr-36 h-14 text-lg border-2 border-gray-200 rounded-full leading-5 bg-white placeholder-gray-400 focus:outline-none focus:placeholder-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
-                        placeholder="Cole a URL da notícia aqui..."
+                        placeholder="Cole a URL para rastrear aqui..."
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
                         disabled={loading}
