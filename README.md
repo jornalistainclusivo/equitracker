@@ -6,7 +6,7 @@ EquiTracker is a local-first, privacy-focused intelligence platform that monitor
 
 ## Quick Start
 
-Follow this exact 3-step sequence to launch the full stack:
+Follow this exact sequence to launch the full stack.
 
 ### 1. Infrastructure (Docker)
 
@@ -39,39 +39,18 @@ npm run dev
 
 ## System Architecture
 
-The following diagram illustrates the "Sovereign Ingestion" pipeline and the "Hybrid Brain" architecture:
+The system utilizes a "Sovereign Ingestion" pipeline (Crawl4AI) and a "Hybrid Brain" (Neo4j + Ollama).
 
-```mermaid
-graph LR
-    URL[URL Input] --> Scraper[Crawl4AI Wrapper]
-    Scraper --> Raw[Raw HTML / Text]
+- **Sovereign Ingestion**: Bypasses commercial APIs using local browser automation.
+- **Hybrid Memory**: Combines Vector Search (Semantic) and Graph Traversal (Contextual).
+- **Local Intelligence**: Powered by Ollama to ensure data privacy and zero egress costs.
 
-    subgraph Sovereign_Backend
-        Raw --> LangChain[LangChain Processor]
-        LangChain --> Ollama[Ollama - Local Embeddings]
-        Ollama --> Vectors[Vector Embeddings]
-        Ollama --> GraphData[Key Entities and Relations]
-    end
-
-    subgraph Hybrid_Memory_Neo4j_5_26
-        Vectors --> NeoVector[(Vector Index)]
-        GraphData --> NeoGraph[(Knowledge Graph)]
-        NeoVector -.-> NeoGraph
-    end
-
-    NeoVector --> API[FastAPI]
-    NeoGraph --> API
-    API --> UI[React Dashboard]
-```
-
-## Core Features
-
-- **Sovereign Ingestion**: Bypasses commercial APIs using local browser automation (Crawl4AI/Playwright) for complete data ownership.
-- **Hybrid Memory**: Utilizes Neo4j 5.x for both Vector Search (Semantic) and Graph Traversal (Contextual), enabling RAG (Retrieval-Augmented Generation).
-- **Local Intelligence**: Powered by Ollama (e.g., Llama 3, Gemma 2, Nomic Embed) to ensure data privacy and zero egress costs.
-- **Privacy-First**: Designed to run entirely within a localized environment (Docker/Localhost).
+For detailed architecture documentation, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Documentation
 
-- [Architecture Details](docs/ARCHITECTURE.md) - Deep dive into the Hybrid Brain and Data Contracts.
-- [GitOps & Engineering](docs/GITOPS.md) - Environment management, dependencies, and roadmap.
+- **[Project Status](docs/project_status.md)**: Current roadmap and completed features.
+- **[API Documentation](docs/API_DOCS.md)**: detailed API endpoint reference.
+- **[Contributing Guide](CONTRIBUTING.md)**: Engineering standards and GitOps protocols.
+- **[Engineering & GitOps](docs/GITOPS.md)**: Environment management and technical guide.
+- **[Changelog](CHANGELOG.md)**: History of changes.
