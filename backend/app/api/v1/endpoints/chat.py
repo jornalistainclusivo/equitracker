@@ -52,38 +52,27 @@ async def chat_with_source(request: ChatRequest):
         )
 
         # 4. Create Prompt Template
-        system_template = """
-You are the **EquiTracker Analyst**, an AI engine specialized in **Media Literacy, Intersectionality, and Critical Discourse Analysis**.
-Your mission is to audit the provided text for structural biases, using frameworks from Human Rights and Data Journalism.
+        # 4. Determine System Prompt based on Intent
+        from app.services.llm import get_system_prompt
 
-CONTEXT:
-{context}
+        user_message_lower = request.query.lower()
+        if "resumo" in user_message_lower:
+            intent = "summary"
+        elif "verificar fatos" in user_message_lower:
+            intent = "fact_check"
+        elif "pauta" in user_message_lower:
+            intent = "pauta"
+        else:
+            intent = "default"
 
-USER QUERY:
-{input}
+        system_template = get_system_prompt(intent)
+        
+        # Append context placeholder for RAG
+        system_template += "\n\nCONTEXT:\n{context}"
+        
+        if intent == "default":
+             system_template += "\n\nUSER QUERY:\n{input}"
 
-ANALYSIS PROTOCOL (Mental Sandbox):
-1.  **Scope Check:** Does this text involve vulnerable groups (Race, Gender, Class, Disability, LGBTQIA+)?
-2.  **Framing Analysis:**
-    * **Passive Voice:** Is violence described passively ("person died") vs actively ("police killed")?
-    * **Euphemisms:** Are terms used to soften gravity or hide responsibility?
-    * **Silencing:** Who is quoted? Who is talked *about* but never heard?
-3.  **Disability & LBI (Specific Check):** *If* PwD are mentioned, apply strict LBI compliance checks. If not, focus on the other intersectional axes.
-
-OUTPUT FORMAT (Markdown):
-Respond in Portuguese (Brazil). Use bolding and lists for readability.
-
-## 🎯 Análise de Enquadramento
-[Direct, journalistic answer. Identify the core narrative angle.]
-
-## 🔍 Auditoria de Viés (Interseccional)
-* **Voz & Protagonismo:** [Who speaks in the text? Is there a "data void"?]
-* **Terminologia:** [Critique outdated or loaded terms using fact-checking standards]
-* **Direitos Humanos:** [Does the text normalize violations? Mention specific rights if applicable]
-
-## 📝 Veredito & Contexto
-[Synthesize the reliability. If the text is neutral/good, say so. If it lacks data, point it out.]
-"""
         prompt = ChatPromptTemplate.from_template(system_template)
 
         # 5. Create Document Chain (Stuff)
