@@ -32,9 +32,9 @@ const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, suggest
 
     // Fixed actions that are always available
     const fixedActions = [
-        "📝 Gerar Resumo Executivo",
-        "⚖️ Verificar Fatos (LBI)",
-        "💡 Gerar Pauta Inclusiva"
+        "📝 Gerar Resumo",
+        "⚖️ Verificar Fatos",
+        "💡 Gerar Pauta"
     ];
 
     // Combine fixed actions with dynamic suggestions (from API)
