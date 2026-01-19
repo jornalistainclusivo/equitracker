@@ -82,6 +82,10 @@ class OllamaService:
             - Must be specific to the article content.
             - Must ask about "Data Voids" (who is missing?).
             - Must challenge euphemisms or framing.
+            - GENERATE EXACTLY 3 PROMPTS.
+            - EACH PROMPT MUST BE A SHORT, PROVOCATIVE QUESTION (MAX 6 WORDS).
+            - INSERT AN EMOJI AT THE START OF EACH PROMPT (e.g., 🔍, 🗣️, 📉).
+            - EXAMPLES: "🔍 Quem financia o estudo?", "🗣️ Onde estão as fontes negras?", "📉 Dados sobre mulheres?"
             """
 
             user_prompt = f"Analyze this text:\n\n{truncated_text}"

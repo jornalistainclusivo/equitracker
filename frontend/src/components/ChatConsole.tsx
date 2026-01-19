@@ -30,7 +30,25 @@ const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, suggest
     // We will just use suggestedPrompts from props.
     // If empty, we might want to show nothing.
 
-    const displayPrompts = suggestedPrompts.length > 0 ? suggestedPrompts.map((p, i) => ({ label: `✨ Sugestão ${i + 1}`, text: p })) : [];
+    // Fixed actions that are always available
+    const fixedActions = [
+        "📝 Gerar Resumo Executivo",
+        "⚖️ Verificar Fatos (LBI)",
+        "💡 Gerar Pauta Inclusiva"
+    ];
+
+    // Combine fixed actions with dynamic suggestions (from API)
+    // Dynamic suggestions might come as just strings, so we map them to objects if needed for complexity,
+    // but here we just need a list of strings to render buttons.
+    // We'll treat all as "chips".
+
+    // We want to render them differently? The prompt says "Merge them". 
+    // "The chat console should now show ~5-6 buttons: 3 standard ones followed by 2-3 unique questions".
+
+    const displayPrompts = [
+        ...fixedActions.map((text, i) => ({ label: text, text })),
+        ...suggestedPrompts.map((text, i) => ({ label: text, text })) // The prompts from LLM already have emojis if we tuned LLM correctly, or we can rely on text content.
+    ];
 
     // Auto-prompt effect when source changes
     useEffect(() => {
