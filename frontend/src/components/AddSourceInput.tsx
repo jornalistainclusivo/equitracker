@@ -85,10 +85,13 @@ const AddSourceInput = ({ onSourceAdded }: AddSourceInputProps) => {
 
     return (
         <div className="py-12 px-4 mb-8 bg-gradient-to-b from-gray-50 to-white rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
                 <Globe className="w-6 h-6 text-blue-600" />
                 Auditoria de Viés Interseccional
             </h2>
+            <p className="text-gray-500 text-sm font-medium mb-6">
+                Arquitetura de Cérebro Híbrido para insights sobre viés sistêmico e padrões de exclusão.
+            </p>
 
             <form onSubmit={handleAdd} className="w-full max-w-2xl relative">
                 <div className="relative group">

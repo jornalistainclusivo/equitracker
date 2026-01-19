@@ -97,7 +97,6 @@ const Dashboard = () => {
                             EquiTracker SoberanAI
                         </h1>
                         <p className="text-gray-500 mt-2">Monitoramento Inteligente de Equidade e Inclusão</p>
-                        <p className="text-gray-500 mt-1 text-sm">Arquitetura de Cérebro Híbrido (Grafos + IA Local) para insights sobre viés sistêmico e padrões de exclusão.</p>
                     </div>
                 </header>
 
