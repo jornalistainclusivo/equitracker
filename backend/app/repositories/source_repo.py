@@ -17,12 +17,12 @@ class SourceRepository:
         ON CREATE SET 
             s.uid = randomUUID(),
             s.name = $name,
-            s.reliability = $reliability,
+            s.inclusion_score = $inclusion_score,
             s.notes = $notes,
             s.created_at = datetime()
         ON MATCH SET
             s.name = $name,
-            s.reliability = $reliability,
+            s.inclusion_score = $inclusion_score,
             s.notes = $notes,
             s.last_updated = datetime()
         RETURN s
@@ -71,10 +71,11 @@ class SourceRepository:
             return SourceResponse(
                 name=node.get("name") or "Unknown",
                 url=node.get("url"),
-                reliability=node.get("reliability") or 0.0,
+                inclusion_score=node.get("inclusion_score"),
                 notes=node.get("notes"),
                 uid=node.get("uid") or "unknown",
-                created_at=created_at
+                created_at=created_at,
+                suggested_prompts=node.get("suggested_prompts") or []
             )
 
     async def get_all_sources(self) -> List[SourceResponse]:
@@ -105,10 +106,11 @@ class SourceRepository:
                 sources.append(SourceResponse(
                     name=node.get("name") or "Unknown",
                     url=node.get("url"),
-                    reliability=node.get("reliability") or 0.0,
+                    inclusion_score=node.get("inclusion_score"),
                     notes=node.get("notes"),
                     uid=node.get("uid") or "unknown",
-                    created_at=created_at
+                    created_at=created_at,
+                    suggested_prompts=node.get("suggested_prompts") or []
                 ))
             return sources
 
@@ -142,10 +144,11 @@ class SourceRepository:
             return SourceResponse(
                 name=node.get("name") or "Unknown",
                 url=node.get("url"),
-                reliability=node.get("reliability") or 0.0,
+                inclusion_score=node.get("inclusion_score"),
                 notes=node.get("notes"),
                 uid=node.get("uid") or "unknown",
-                created_at=created_at
+                created_at=created_at,
+                suggested_prompts=node.get("suggested_prompts") or []
             )
 
     async def update_content(self, uid: str, content: str):
@@ -172,17 +175,19 @@ class SourceRepository:
         async with self.driver.session() as session:
             await session.run(query, uid=uid, summary=summary)
 
-    async def update_reliability(self, uid: str, reliability: float):
+    async def update_analysis_results(self, uid: str, inclusion_score: int, suggested_prompts: List[str]):
         """
-        Updates the reliability score of a Source node.
+        Updates the inclusion score and suggested prompts of a Source node.
         """
         query = """
         MATCH (s:Source {uid: $uid})
-        SET s.reliability = $reliability, s.last_analyzed_at = datetime()
+        SET s.inclusion_score = $inclusion_score, 
+            s.suggested_prompts = $suggested_prompts,
+            s.last_analyzed_at = datetime()
         RETURN s
         """
         async with self.driver.session() as session:
-            await session.run(query, uid=uid, reliability=reliability)
+            await session.run(query, uid=uid, inclusion_score=inclusion_score, suggested_prompts=suggested_prompts)
             
     async def get_source_content(self, uid: str) -> Optional[str]:
         """

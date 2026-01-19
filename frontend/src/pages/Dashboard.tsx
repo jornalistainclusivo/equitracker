@@ -156,6 +156,7 @@ const Dashboard = () => {
                     <ChatConsole
                         sourceId={activeChatSource.id}
                         sourceName={activeChatSource.name}
+                        suggestedPrompts={sources.find(s => s.uid === activeChatSource.id)?.suggested_prompts}
                         onClose={() => setActiveChatSource(null)}
                     />
                 )}

@@ -11,24 +11,26 @@ interface Message {
 interface ChatConsoleProps {
     sourceId: string;
     sourceName: string;
+    suggestedPrompts?: string[];
     onClose: () => void;
 }
 
-const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, onClose }) => {
+const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, suggestedPrompts = [], onClose }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
-    const quickPrompts = [
-        { label: "🔍 Resumo Executivo", text: "Gere um resumo executivo desta matéria focando nos principais atores e fatos." },
-        { label: "⚖️ Checar Viés (LBI)", text: "Analise a matéria sob a ótica da LBI (Lei Brasileira de Inclusão) e identifique possíveis vieses capacitistas." },
-        { label: "📜 Contexto Legal", text: "Quais são os marcos legais e direitos humanos citados ou omitidos nesta narrativa?" },
-        { label: "💡 Sugerir Pauta Inclusiva", text: "Com base neste texto, sugira pautas complementares que tragam uma perspectiva mais inclusiva e diversa." },
-        { label: "🔎 Quem financia?", text: "Existem informações ou pistas sobre o financiamento e interesses econômicos por trás deste veículo ou desta cobertura?" }
-    ];
+    // Default cleanup if prompts are missing, or use what's passed
+    // Requirement: "Remove the hardcoded list".
+    // "Receive suggested_prompts ... Render these strings".
+    // We will just use suggestedPrompts from props.
+    // If empty, we might want to show nothing.
+
+    const displayPrompts = suggestedPrompts.length > 0 ? suggestedPrompts.map((p, i) => ({ label: `✨ Sugestão ${i + 1}`, text: p })) : [];
 
     // Auto-prompt effect when source changes
     useEffect(() => {
@@ -54,17 +56,44 @@ const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, onClose
     const handleAutoTrigger = async (question: string) => {
         setMessages([{ role: 'user', content: question }]);
         setIsLoading(true);
+
+        // Cancel previous request if any
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         try {
             const response = await api.post('/chat', {
                 source_uid: sourceId,
                 query: question
+            }, {
+                signal: controller.signal
             });
             setMessages(prev => [...prev, { role: 'assistant', content: response.data.answer }]);
-        } catch (error) {
-            console.error("Chat error:", error);
-            setMessages(prev => [...prev, { role: 'assistant', content: "Desculpe, não consegui iniciar a análise automática." }]);
+        } catch (error: any) {
+            if (error.name === 'CanceledError' || error.message === 'canceled') {
+                console.log("Request canceled");
+            } else {
+                console.error("Chat error:", error);
+                setMessages(prev => [...prev, { role: 'assistant', content: "Desculpe, não consegui iniciar a análise automática." }]);
+            }
         } finally {
+            if (abortControllerRef.current === controller) {
+                setIsLoading(false);
+                abortControllerRef.current = null;
+            }
+        }
+    };
+
+    const handleStop = () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
             setIsLoading(false);
+            // Optional: Add a system message saying "Geração interrompida pelo usuário."
+            setMessages(prev => [...prev, { role: 'assistant', content: "🛑 *Geração interrompida pelo usuário.*" }]);
         }
     };
 
@@ -78,18 +107,34 @@ const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, onClose
         setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         setIsLoading(true);
 
+        // Start AbortController
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         try {
             const response = await api.post('/chat', {
                 source_uid: sourceId,
                 query: userMessage
+            }, {
+                signal: controller.signal
             });
 
             setMessages(prev => [...prev, { role: 'assistant', content: response.data.answer }]);
-        } catch (error) {
-            console.error("Chat error:", error);
-            setMessages(prev => [...prev, { role: 'assistant', content: "Desculpe, ocorreu um erro ao processar sua pergunta." }]);
+        } catch (error: any) {
+            if (error.name === 'CanceledError' || error.message === 'canceled') {
+                console.log("Request canceled");
+            } else {
+                console.error("Chat error:", error);
+                setMessages(prev => [...prev, { role: 'assistant', content: "Desculpe, ocorreu um erro ao processar sua pergunta." }]);
+            }
         } finally {
-            setIsLoading(false);
+            if (abortControllerRef.current === controller) {
+                setIsLoading(false);
+                abortControllerRef.current = null;
+            }
         }
     };
 
@@ -245,7 +290,7 @@ const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, onClose
                     <div className="p-4 bg-white border-t border-gray-100">
                         {/* Quick Prompts */}
                         <div className="max-w-4xl mx-auto w-full mb-3 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                            {quickPrompts.map((chip, idx) => (
+                            {displayPrompts.map((chip, idx) => (
                                 <button
                                     key={idx}
                                     onClick={() => handleSend(undefined, chip.text)}
@@ -268,8 +313,9 @@ const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, onClose
                                 disabled={isLoading}
                             />
                             <button
-                                type="submit"
-                                disabled={(!input.trim() && !isLoading) || (isLoading && false)} // Button is always active if loading to show "Stop"
+                                type="button" // Change to button to prevent form default submit if clicking stop
+                                onClick={isLoading ? handleStop : (e) => handleSend(e)}
+                                disabled={!input.trim() && !isLoading}
                                 className={`absolute right-2 bottom-3 p-2 rounded-lg transition-all ${!input.trim() && !isLoading
                                     ? 'text-gray-300 cursor-not-allowed'
                                     : isLoading

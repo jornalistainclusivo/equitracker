@@ -30,8 +30,8 @@ const SourceCard: React.FC<SourceCardProps> = ({ source, onAnalyze, onChatOpen, 
                 <div className="p-2 bg-blue-50 rounded-lg">
                     <Globe className="w-6 h-6 text-blue-600" aria-hidden="true" />
                 </div>
-                {/* Fixed: Access reliability instead of reliability_score */}
-                <StatusBadge score={source.reliability} />
+                {/* Access inclusion_score */}
+                <StatusBadge score={source.inclusion_score} />
             </div>
 
             <h3 className="text-lg font-semibold text-gray-900 mb-2">{source.name}</h3>

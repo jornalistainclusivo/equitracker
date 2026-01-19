@@ -1,7 +1,8 @@
 export interface Source {
     name: string;
     url: string;
-    reliability: number;
+    inclusion_score?: number;
+    suggested_prompts?: string[];
     uid: string;
 }
 

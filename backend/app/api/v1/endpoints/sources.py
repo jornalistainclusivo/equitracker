@@ -1,6 +1,7 @@
 from typing import List
 from fastapi import APIRouter, HTTPException
 from app.schemas.source import SourceCreate, SourceResponse
+from app.schemas.analysis import AnalysisResult
 from app.repositories.source_repo import SourceRepository
 from app.services.scraper import SovereignScraper
 from app.services.llm import OllamaService
@@ -77,10 +78,9 @@ async def summarize_source(uid: str):
 @router.post("/{uid}/analyze")
 async def analyze_source(uid: str):
     """
-    Analyze reliability of a source by UID.
-    Flow: Scrape -> Vectorize -> Reliability Analysis
+    Analyze inclusion of a source by UID.
+    Flow: Scrape -> Analysis -> Update DB
     """
-    import random
     from app.services.knowledge_base import KnowledgeBase
 
     try:
@@ -89,9 +89,6 @@ async def analyze_source(uid: str):
             raise HTTPException(status_code=404, detail="Source not found")
         
         # 1. Scrape content
-        # We ensure content is fresh or at least available.
-        # If url is missing, we can't scrape, but if content exists we might rely on it.
-        # Assuming URL is required for scraping.
         if not source.url:
              raise HTTPException(status_code=400, detail="Source has no URL for analysis")
 
@@ -99,22 +96,25 @@ async def analyze_source(uid: str):
         # Put content in DB
         await repo.update_content(uid, content)
         
-        # 2. Vectorize & Store
+        # 2. Vectorize & Store (Wait, do we need this for 1-click analysis? Maybe yes for RAG later)
         kb = KnowledgeBase()
         await kb.vectorize_and_store(content, uid)
 
-        # 3. Reliability Analysis (Mock)
-        # Mock analysis logic: valid sources are mostly reliable
-        # In a real scenario, this would call an LLM or Check logic
-        mock_score = random.uniform(0.7, 0.95)
+        # 3. Inclusion Analysis (Real LLM)
+        analysis_result = await OllamaService.analyze_article(content)
         
-        await repo.update_reliability(uid, mock_score)
+        # 4. Save Results
+        await repo.update_analysis_results(
+            uid, 
+            analysis_result.inclusion_score, 
+            analysis_result.suggested_prompts
+        )
         
-        return {
-            "status": "success", 
-            "reliability": mock_score,
-            "vectorization": "completed"
-        }
+        return analysis_result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
