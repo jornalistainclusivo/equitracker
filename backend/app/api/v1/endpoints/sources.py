@@ -119,3 +119,29 @@ async def analyze_source(uid: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/{uid}")
+async def delete_source(uid: str):
+    """
+    Delete a source by UID.
+    """
+    try:
+        success = await repo.delete_source(uid)
+        if not success:
+            raise HTTPException(status_code=404, detail="Source not found")
+        return {"status": "success", "message": "Source deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/")
+async def delete_all_sources():
+    """
+    Delete ALL sources.
+    """
+    try:
+        count = await repo.delete_all_sources()
+        return {"status": "success", "message": f"Deleted {count} sources"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

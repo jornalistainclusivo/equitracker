@@ -198,3 +198,31 @@ class SourceRepository:
             if not record:
                 return None
             return record["content"]
+
+    async def delete_source(self, uid: str) -> bool:
+        """
+        Deletes a Source node and its relationships by UID.
+        """
+        query = """
+        MATCH (s:Source {uid: $uid})
+        DETACH DELETE s
+        RETURN count(s) as deleted_count
+        """
+        async with self.driver.session() as session:
+            result = await session.run(query, uid=uid)
+            record = await result.single()
+            return record["deleted_count"] > 0
+
+    async def delete_all_sources(self) -> int:
+        """
+        Deletes ALL Source nodes and their relationships.
+        """
+        query = """
+        MATCH (s:Source)
+        DETACH DELETE s
+        RETURN count(s) as deleted_count
+        """
+        async with self.driver.session() as session:
+            result = await session.run(query)
+            record = await result.single()
+            return record["deleted_count"]

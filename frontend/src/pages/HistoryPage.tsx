@@ -37,30 +37,26 @@ const HistoryPage = () => {
     }, []);
 
     const handleDelete = async (uid: string) => {
-        if (!confirm("Tem certeza que deseja excluir esta análise?")) return;
+        if (!window.confirm("Tem certeza que deseja excluir esta análise?")) return;
 
         try {
             await api.delete(`/sources/${uid}`);
             setSources(prev => prev.filter(s => s.uid !== uid));
         } catch (err) {
-            console.error("To implement backend delete:", err);
-            // Mock UI removal if backend fails as requested
-            setSources(prev => prev.filter(s => s.uid !== uid));
-            alert("Backend delete não implementado. Item removido localmente apenas para demonstração.");
+            console.error("Failed to delete source:", err);
+            alert("Erro ao excluir. Tente novamente.");
         }
     };
 
     const handleClearAll = async () => {
-        if (!confirm("⚠️ ATENÇÃO: Isso excluirá TODAS as análises permanentemente. Continuar?")) return;
+        if (!window.confirm("⚠️ ATENÇÃO: Isso excluirá TODAS as análises permanentemente. Continuar?")) return;
 
         try {
-            // Assuming a potential plural delete or loop
-            await Promise.all(sources.map(s => api.delete(`/sources/${s.uid}`)));
+            await api.delete('/sources/');
             setSources([]);
         } catch (err) {
-            console.error("To implement backend clear all:", err);
-            setSources([]);
-            alert("Alguns itens podem não ter sido excluídos no backend. Histórico limpo localmente.");
+            console.error("Failed to clear history:", err);
+            alert("Erro ao limpar histórico. Tente novamente.");
         }
     };
 
