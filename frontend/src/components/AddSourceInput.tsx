@@ -45,7 +45,7 @@ const AddSourceInput = ({ onSourceAdded }: AddSourceInputProps) => {
             const payload = {
                 url: url,
                 name: name,
-                reliability: 0.5, // Default initial value required by schema
+                inclusion_score: 50, // Default initial value (0-100)
                 notes: "Adicionado via Dashboard"
             };
 
@@ -53,7 +53,7 @@ const AddSourceInput = ({ onSourceAdded }: AddSourceInputProps) => {
             const newUid = createRes.data.uid;
 
             // 2. Trigger analysis
-            setSubmittingStatus('Analisando confiabilidade...');
+            setSubmittingStatus('Analisando inclusão...');
             await api.post(`/sources/${newUid}/analyze`);
 
             // 3. Refresh list
@@ -96,43 +96,36 @@ const AddSourceInput = ({ onSourceAdded }: AddSourceInputProps) => {
             <form onSubmit={handleAdd} className="w-full max-w-2xl relative">
                 <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Globe className="h-6 w-6 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                        <ArrowRight className="w-5 h-5 text-gray-400" />
                     </div>
+
                     <input
-                        type="url"
-                        className="block w-full pl-12 pr-36 h-14 text-lg border-2 border-gray-200 rounded-full leading-5 bg-white placeholder-gray-400 focus:outline-none focus:placeholder-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
-                        placeholder="Cole a URL para rastrear aqui..."
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
-                        disabled={loading}
-                        required
+                        placeholder="Cole a URL de uma fonte para auditar..."
+                        className="w-full pl-12 pr-28 py-3 rounded-lg border border-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-100"
                     />
+
                     <button
                         type="submit"
                         disabled={loading}
-                        className="absolute inset-y-1.5 right-1.5 px-6 rounded-full text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold"
                     >
-                        {loading ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                {submittingStatus || 'Processando'}
-                            </>
-                        ) : (
-                            <>
-                                Analisar
-                                <ArrowRight className="w-5 h-5" />
-                            </>
-                        )}
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Adicionar</span>}
                     </button>
                 </div>
-            </form>
 
-            {errorMsg && (
-                <div className="mt-4 flex items-center gap-2 text-red-600 bg-red-50 px-4 py-2 rounded-lg text-sm font-medium animate-in fade-in slide-in-from-top-2">
-                    <AlertCircle className="w-4 h-4" />
-                    {errorMsg}
-                </div>
-            )}
+                {submittingStatus && (
+                    <div className="mt-3 text-sm text-gray-500">{submittingStatus}</div>
+                )}
+
+                {errorMsg && (
+                    <div className="mt-3 text-sm text-red-600 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4" />
+                        {errorMsg}
+                    </div>
+                )}
+            </form>
         </div>
     );
 };
