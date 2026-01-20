@@ -4,7 +4,7 @@ Welcome to the EquiTracker engineering team. This project follows strict enginee
 
 ## Core Protocols
 
-All contributors must adhere to the **[JINC Universal Protocol](JINC_UNIVERSAL_PROTOCOL.md)**.
+All contributors must adhere to the **[JINC Universal Protocol](docs/JINC_UNIVERSAL_PROTOCOL.md)**.
 
 ### 1. GitOps & Branching
 
