@@ -4,8 +4,8 @@ services:
   neo4j:
     image: neo4j:5.26.0
     ports:
-      - "7474:7474" # HTTP
-      - "7687:7687" # Bolt
+      - "127.0.0.1:7474:7474" # HTTP (Localhost only)
+      - "127.0.0.1:7687:7687" # Bolt (Localhost only)
     environment:
       - NEO4J_AUTH=neo4j/equitracker123
       - NEO4J_PLUGINS=["apoc"]
