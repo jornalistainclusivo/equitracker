@@ -23,7 +23,7 @@ coverage/
 
 # Docker
 .docker/
-docs/project_status.md
+
 
 # Security Reports
 relatorio_sec_devops_*.md
