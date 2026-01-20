@@ -23,7 +23,12 @@ coverage/
 
 # Docker
 .docker/
+
+# Project Status
 docs/project_status.md
 
 # Security Reports
 relatorio_sec_devops_*.md
+
+# Cache Files
+*.tsbuildinfo
