@@ -18,15 +18,15 @@ const HistoryPage = () => {
             let data: Source[] = [];
             if (Array.isArray(response.data)) {
                 data = response.data;
-            } else if (response.data && Array.isArray(response.data.sources)) {
-                data = response.data.sources;
+            } else if (response.data && Array.isArray((response.data as any).sources)) {
+                data = (response.data as any).sources;
             }
             // Sort by uid descending as a proxy for date since date is not in types.ts
-            // Usually uids are chronologically increasing if they are sequential or have timestamps
-            setSources(data.reverse());
-        } catch (err) {
-            console.error("🔥 Error fetching sources:", err);
-            setError("Erro ao carregar o histórico.");
+            setSources(data.sort((a, b) => (b.uid > a.uid ? 1 : -1)));
+            setError(null);
+        } catch (err: unknown) {
+            console.error("Failed to fetch sources:", err);
+            setError("Falha ao buscar histórico de fontes.");
         } finally {
             setLoading(false);
         }
@@ -37,66 +37,40 @@ const HistoryPage = () => {
     }, []);
 
     const handleDelete = async (uid: string) => {
-        if (!window.confirm("Tem certeza que deseja excluir esta análise?")) return;
-
         try {
             await api.delete(`/sources/${uid}`);
             setSources(prev => prev.filter(s => s.uid !== uid));
         } catch (err) {
             console.error("Failed to delete source:", err);
-            alert("Erro ao excluir. Tente novamente.");
+            setError("Erro ao excluir fonte.");
         }
     };
 
     const handleClearAll = async () => {
-        if (!window.confirm("⚠️ ATENÇÃO: Isso excluirá TODAS as análises permanentemente. Continuar?")) return;
-
+        if (!confirm("Tem certeza que deseja excluir todas as fontes?")) return;
         try {
-            await api.delete('/sources/');
+            await api.delete(`/sources/`);
             setSources([]);
         } catch (err) {
-            console.error("Failed to clear history:", err);
-            alert("Erro ao limpar histórico. Tente novamente.");
+            console.error("Failed to clear sources:", err);
+            setError("Erro ao limpar fontes.");
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-screen bg-gray-50">
-                <div className="text-lg text-gray-600 animate-pulse">Carregando histórico...</div>
-            </div>
-        );
-    }
-
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
-            <div className="max-w-6xl mx-auto">
-                <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <div>
-                        <button
-                            onClick={() => navigate('/')}
-                            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors mb-2 text-sm font-medium"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            Voltar para o Dashboard
-                        </button>
-                        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                            <Globe className="w-8 h-8 text-blue-600" aria-hidden="true" />
-                            Histórico de Análises
-                        </h1>
-                        <p className="text-gray-500 mt-1">Gerencie todas as fontes analisadas anteriormente</p>
-                    </div>
+        <div className="container mx-auto py-10">
+            <div className="mb-6 flex items-center justify-between">
+                <h1 className="text-2xl font-bold">Histórico de Análises</h1>
+                <div className="flex items-center gap-3">
+                    <button onClick={() => navigate('/')} className="text-sm text-gray-600 hover:underline">Voltar</button>
+                    <button onClick={fetchSources} className="text-sm text-gray-600 hover:underline">Atualizar</button>
+                </div>
+            </div>
 
-                    {sources.length > 0 && (
-                        <button
-                            onClick={handleClearAll}
-                            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors text-sm font-semibold"
-                        >
-                            <AlertTriangle className="w-4 h-4" />
-                            Limpar Tudo
-                        </button>
-                    )}
-                </header>
+            <div>
+                {loading ? (
+                    <div>Carregando...</div>
+                ) : null}
 
                 {error ? (
                     <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-center gap-3 text-red-600">
@@ -126,7 +100,7 @@ const HistoryPage = () => {
                                         <div className="p-2 bg-blue-50 rounded-lg">
                                             <Globe className="w-5 h-5 text-blue-600" />
                                         </div>
-                                        <StatusBadge score={source.reliability} />
+                                        <StatusBadge score={source.inclusion_score ?? 0} />
                                     </div>
                                     <h3 className="font-bold text-gray-900 truncate" title={source.name}>{source.name}</h3>
                                     <p className="text-xs text-gray-400 truncate mt-1">{source.url}</p>

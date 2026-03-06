@@ -5,9 +5,11 @@ from app.schemas.analysis import AnalysisResult
 from app.repositories.source_repo import SourceRepository
 from app.services.scraper import SovereignScraper
 from app.services.llm import OllamaService
+import logging
 
 router = APIRouter()
 repo = SourceRepository()
+logger = logging.getLogger(__name__)
 
 @router.post("/", response_model=SourceResponse)
 async def create_source(source_in: SourceCreate):
@@ -16,8 +18,11 @@ async def create_source(source_in: SourceCreate):
     """
     try:
         return await repo.create_source(source_in)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Failed to create source")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/", response_model=List[SourceResponse])
 async def read_sources():
@@ -26,8 +31,11 @@ async def read_sources():
     """
     try:
         return await repo.get_all_sources()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Failed to read sources")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/{uid}/crawl")
 async def crawl_source(uid: str):
@@ -42,15 +50,16 @@ async def crawl_source(uid: str):
         # Ensure URL is present
         if not source.url:
              raise HTTPException(status_code=400, detail="Source has no URL")
-
+ 
         content = await SovereignScraper.scrape_url(source.url)
         await repo.update_content(uid, content)
         
         return {"status": "success", "length": len(content)}
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Failed to crawl source")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/{uid}/summarize")
 async def summarize_source(uid: str):
@@ -72,8 +81,9 @@ async def summarize_source(uid: str):
         return {"status": "success", "summary_length": len(summary), "preview": summary[:100] + "..."}
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Failed to summarize source")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/{uid}/analyze")
 async def analyze_source(uid: str):
@@ -113,12 +123,9 @@ async def analyze_source(uid: str):
         return analysis_result
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Failed to analyze source")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.delete("/{uid}")
 async def delete_source(uid: str):
@@ -132,8 +139,9 @@ async def delete_source(uid: str):
         return {"status": "success", "message": "Source deleted"}
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Failed to delete source")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.delete("/")
 async def delete_all_sources():
@@ -143,5 +151,8 @@ async def delete_all_sources():
     try:
         count = await repo.delete_all_sources()
         return {"status": "success", "message": f"Deleted {count} sources"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Failed to delete all sources")
+        raise HTTPException(status_code=500, detail="Internal server error")

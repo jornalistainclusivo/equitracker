@@ -1,1 +1,0 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/types.ts","./src/vite-env.d.ts","./src/components/addsourceinput.tsx","./src/components/chatconsole.tsx","./src/components/sourcecard.tsx","./src/components/sourcechat.tsx","./src/components/statusbadge.tsx","./src/pages/dashboard.tsx","./src/services/api.ts"],"version":"5.9.3"}
