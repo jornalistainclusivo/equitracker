@@ -2,14 +2,14 @@ import httpx
 import logging
 from typing import Optional, List
 import json
+from app.core.config import settings
 from app.schemas.analysis import AnalysisResult
 
-# Configure logger
 logger = logging.getLogger(__name__)
 
 class OllamaService:
-    OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
-    MODEL = "gemma:2b"
+    OLLAMA_URL = f"{settings.OLLAMA_BASE_URL}/api/generate"
+    MODEL = settings.OLLAMA_MODEL
     TIMEOUT = 180.0
 
     @classmethod
@@ -133,7 +133,7 @@ class OllamaService:
                     )
 
         except Exception as e:
-            logger.error(f"Ollama analysis failed: {e}")
+            logger.exception("Ollama analysis failed with exception")
             raise Exception(f"Analysis failed: {str(e)}")
 
 def get_system_prompt(intent: str) -> str:

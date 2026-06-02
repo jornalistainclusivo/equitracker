@@ -32,7 +32,7 @@ async def chat_with_source(request: ChatRequest):
         # 1. Initialize Embeddings (must match ingestion)
         embeddings = OllamaEmbeddings(
             base_url=settings.OLLAMA_BASE_URL,
-            model="nomic-embed-text"
+            model=settings.OLLAMA_EMBED_MODEL
         )
 
         # 2. Connect to Neo4j Vector Store (Existing Index)
@@ -47,7 +47,7 @@ async def chat_with_source(request: ChatRequest):
         # 3. Initialize LLM
         llm = ChatOllama(
             base_url=settings.OLLAMA_BASE_URL,
-            model="deepseek-r1:8b", 
+            model=settings.OLLAMA_MODEL, 
             temperature=0.1
         )
 

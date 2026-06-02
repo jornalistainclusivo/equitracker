@@ -46,8 +46,8 @@ const ChatConsole: React.FC<ChatConsoleProps> = ({ sourceId, sourceName, suggest
     // "The chat console should now show ~5-6 buttons: 3 standard ones followed by 2-3 unique questions".
 
     const displayPrompts = [
-        ...fixedActions.map((text, i) => ({ label: text, text })),
-        ...suggestedPrompts.map((text, i) => ({ label: text, text })) // The prompts from LLM already have emojis if we tuned LLM correctly, or we can rely on text content.
+        ...fixedActions.map((text) => ({ label: text, text })),
+        ...suggestedPrompts.map((text) => ({ label: text, text })) // The prompts from LLM already have emojis if we tuned LLM correctly, or we can rely on text content.
     ];
 
     // Auto-prompt effect when source changes

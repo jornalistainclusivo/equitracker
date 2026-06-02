@@ -10,7 +10,7 @@ class KnowledgeBase:
     def __init__(self) -> None:
         self.embeddings = OllamaEmbeddings(
             base_url=settings.OLLAMA_BASE_URL,
-            model="nomic-embed-text"
+            model=settings.OLLAMA_EMBED_MODEL
         )
         self.url = settings.NEO4J_URI
         self.username = settings.NEO4J_USER
