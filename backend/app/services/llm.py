@@ -54,7 +54,9 @@ class OllamaService:
         Returns a score (0-100) and suggested prompts.
         """
         try:
-            truncated_text = text[:10000] # Increased context window for analysis
+            # Phi3 has a ~4k effective context for generation quality.
+            # Truncate aggressively to prevent memory pressure and timeouts.
+            truncated_text = text[:4000]
             
             system_prompt = """
             You are the EquiTracker Equity Engine, an expert in Media Representation, Intersectionality, and Data Voids.
