@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from app.schemas.source import SourceCreate, SourceResponse
 from app.schemas.analysis import AnalysisResult
 from app.repositories.source_repo import SourceRepository
@@ -86,10 +86,11 @@ async def summarize_source(uid: str):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/{uid}/analyze")
-async def analyze_source(uid: str):
+async def analyze_source(uid: str, force: bool = Query(False, description="Force re-analysis, bypassing cache")):
     """
     Analyze inclusion of a source by UID.
-    Flow: Scrape -> Analysis -> Update DB
+    Uses Neo4j cache to avoid redundant Ollama calls.
+    Pass ?force=true to bypass cache and force re-analysis.
     """
     from app.services.knowledge_base import KnowledgeBase
 
@@ -98,29 +99,49 @@ async def analyze_source(uid: str):
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
         
-        # 1. Scrape content
         if not source.url:
              raise HTTPException(status_code=400, detail="Source has no URL for analysis")
 
+        # ─── Cache Check ───────────────────────────────────────
+        if not force:
+            cached = await repo.get_cached_analysis(uid)
+            if cached:
+                logger.info(f"Cache HIT for source {uid}. Skipping Ollama.")
+                return {
+                    "inclusion_score": cached["inclusion_score"],
+                    "suggested_prompts": cached["suggested_prompts"],
+                    "summary": cached["summary"],
+                    "cached": True,
+                }
+
+        # ─── Full Analysis Pipeline ────────────────────────────
+        logger.info(f"Cache MISS for source {uid}. Running full pipeline.")
+
+        # 1. Scrape content
         content = await SovereignScraper.scrape_url(source.url)
-        # Put content in DB
         await repo.update_content(uid, content)
         
-        # 2. Vectorize & Store (Wait, do we need this for 1-click analysis? Maybe yes for RAG later)
+        # 2. Vectorize & Store
         kb = KnowledgeBase()
         await kb.vectorize_and_store(content, uid)
 
-        # 3. Inclusion Analysis (Real LLM)
+        # 3. Inclusion Analysis (LLM)
         analysis_result = await OllamaService.analyze_article(content)
         
-        # 4. Save Results
+        # 4. Save Results (now includes summary for cache)
         await repo.update_analysis_results(
             uid, 
             analysis_result.inclusion_score, 
-            analysis_result.suggested_prompts
+            analysis_result.suggested_prompts,
+            analysis_result.summary,
         )
         
-        return analysis_result
+        return {
+            "inclusion_score": analysis_result.inclusion_score,
+            "suggested_prompts": analysis_result.suggested_prompts,
+            "summary": analysis_result.summary,
+            "cached": False,
+        }
     except HTTPException:
         raise
     except Exception:

@@ -18,6 +18,10 @@ async def lifespan(app: FastAPI):
     is_connected = await db.verify_connectivity()
     if is_connected:
         logger.info("Successfully connected to Neo4j.")
+        # Create indexes for cache performance
+        from app.repositories.source_repo import SourceRepository
+        await SourceRepository().ensure_indexes()
+        logger.info("Neo4j indexes ensured.")
     else:
         logger.error("Failed to connect to Neo4j on startup.")
     
