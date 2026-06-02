@@ -5,14 +5,14 @@ from app.core.config import settings
 from app.schemas.graph import GraphExtraction
 
 class EntityExtractor:
-    def __init__(self, model: str = "deepseek-r1:8b"):
+    def __init__(self, model: str = None):
         """
         Initialize the EntityExtractor with a local Ollama model.
-        Defaults to 'deepseek-r1:8b' as per project standards, but customizable.
+        Defaults to settings.OLLAMA_MODEL (phi3).
         """
         self.llm = ChatOllama(
             base_url=settings.OLLAMA_BASE_URL,
-            model=model,
+            model=model or settings.OLLAMA_MODEL,
             format="json",
             temperature=0
         )

@@ -25,7 +25,7 @@ cd backend
 # Windows
 venv\Scripts\activate
 # Start Server
-uvicorn app.main:app --reload
+python run.py
 ```
 
 ### 3. Frontend (React/Vite)
