@@ -79,7 +79,7 @@ class SourceRepository:
         query = """
         MATCH (s:Source)
         RETURN s
-        ORDER BY s.created_at DESC
+        ORDER BY coalesce(s.last_analyzed_at, s.created_at) DESC
         """
         async with self.driver.session() as session:
             result = await session.run(query)
