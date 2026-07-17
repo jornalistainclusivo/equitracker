@@ -21,8 +21,8 @@ const HistoryPage = () => {
             } else if (response.data && Array.isArray((response.data as any).sources)) {
                 data = (response.data as any).sources;
             }
-            // Sort by uid descending as a proxy for date since date is not in types.ts
-            setSources(data.sort((a, b) => (b.uid > a.uid ? 1 : -1)));
+            // Backend already provides correctly ordered data
+            setSources(data);
             setError(null);
         } catch (err: unknown) {
             console.error("Failed to fetch sources:", err);

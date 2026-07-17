@@ -37,8 +37,8 @@ const Dashboard = () => {
                 data = response.data.sources;
             }
 
-            // Sort by UID descending (proxies for newest first)
-            setSources(data.reverse());
+            // Backend already provides correctly ordered data
+            setSources(data);
         } catch (err) {
             console.error("🔥 FULL NETWORK ERROR:", err);
             setError("Falha na conexão: Verifique o console (F12)");
