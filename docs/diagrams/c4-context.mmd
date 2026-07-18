@@ -1,0 +1,19 @@
+C4Context
+    title EquiTracker - Conversational Interface & Pragmatic Sovereignty
+
+    Person(user, "Journalist / Researcher", "Analyzes sources for inclusion and bias.")
+
+    System_Boundary(equitracker, "EquiTracker Platform") {
+        System(frontend, "Conversational UI", "React/Vite SPA. Handles Sidebar history and main chat.")
+        System(backend, "API Gateway & LLM Service", "FastAPI. Orchestrates scraping, graph storage, and LLM abstraction.")
+    }
+
+    SystemDb(neo4j, "Graph Database", "Neo4j. Stores Sources, Scores, and Reasonings locally.")
+    System_Ext(target_site, "Target Website", "External news or content source.")
+    System_Ext(llm_providers, "LLM Providers (Groq/Gemini/OpenRouter)", "External ultra-fast inference APIs.")
+
+    Rel(user, frontend, "Interacts via keyboard & ARIA-compliant UI")
+    Rel(frontend, backend, "Sends analysis requests & fetches history")
+    Rel(backend, target_site, "Scrapes content securely (SSRF protected)")
+    Rel(backend, neo4j, "Persists Source (URL, score, reasoning)")
+    Rel(backend, llm_providers, "Delegates inference dynamically via .env")
