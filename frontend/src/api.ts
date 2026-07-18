@@ -1,5 +1,5 @@
 import api from './services/api';
-import { Source } from '../types';
+import { Source } from './types';
 
 export const getSources = async (): Promise<Source[]> => {
     const response = await api.get('/sources/');
@@ -21,5 +21,10 @@ export const createSource = async (url: string): Promise<Source> => {
 
 export const analyzeSource = async (uid: string): Promise<{ inclusion_score: number, reasoning: string }> => {
     const response = await api.post(`/sources/${uid}/analyze`);
+    return response.data;
+};
+
+export const sendChatMessage = async (uid: string, prompt: string): Promise<{ answer: string }> => {
+    const response = await api.post(`/sources/${uid}/chat`, { prompt });
     return response.data;
 };

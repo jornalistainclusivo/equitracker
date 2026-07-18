@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, Send, Globe, Loader2 } from 'lucide-react';
-import { getSources, createSource, analyzeSource } from '../api';
+import { useLocation } from 'react-router-dom';
+import { getSources, createSource, analyzeSource, sendChatMessage } from '../api';
 import { Source } from '../types';
+import ReactMarkdown from 'react-markdown';
 
 export default function ChatView() {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -9,49 +11,87 @@ export default function ChatView() {
   const [history, setHistory] = useState<Source[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeSource, setActiveSource] = useState<Source | null>(null);
+  const [messages, setMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
+  const location = useLocation();
 
   useEffect(() => {
     fetchHistory();
   }, []);
 
+  useEffect(() => {
+    setMessages([]);
+  }, [activeSource]);
+
   const fetchHistory = async () => {
     try {
       const data = await getSources();
       setHistory(data);
+      
+      // Handle redirect from HistoryPage
+      if (location.state?.openChatId) {
+          const sourceToOpen = data.find(s => s.uid === location.state.openChatId);
+          if (sourceToOpen) {
+              setActiveSource(sourceToOpen);
+          }
+          // Optional: clear state so refresh doesn't reopen it
+          window.history.replaceState({}, document.title);
+      }
     } catch (error) {
       console.error('Failed to fetch history', error);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!prompt.trim()) return;
+  const handleSubmit = async (e?: React.FormEvent, directPrompt?: string) => {
+    if (e) e.preventDefault();
+    const currentPrompt = (directPrompt || prompt).trim();
+    if (!currentPrompt) return;
 
     setLoading(true);
-    const url = prompt.trim();
     setPrompt('');
     
-    try {
-      // 1. Create source
-      const newSource = await createSource(url);
-      setActiveSource(newSource);
-      
-      // 2. Trigger analysis
-      const analysis = await analyzeSource(newSource.uid);
-      
-      // 3. Update view with results
-      const updatedSource = { 
-          ...newSource, 
-          inclusion_score: analysis.inclusion_score, 
-          reasoning: analysis.reasoning 
-      };
-      
-      setActiveSource(updatedSource);
-      await fetchHistory();
-    } catch (error) {
-      console.error('Analysis failed', error);
-    } finally {
-      setLoading(false);
+    // Heurística simples: se parecer uma URL sem espaços, cria fonte, senão é chat.
+    const isUrl = /^https?:\/\/[^\s]+$/.test(currentPrompt);
+    
+    if (isUrl) {
+      try {
+        // 1. Create source
+        const newSource = await createSource(currentPrompt);
+        setActiveSource(newSource);
+        
+        // 2. Trigger analysis
+        const analysis = await analyzeSource(newSource.uid);
+        
+        // 3. Update view with results
+        const updatedSource = { 
+            ...newSource, 
+            inclusion_score: analysis.inclusion_score, 
+            reasoning: analysis.reasoning 
+        };
+        
+        setActiveSource(updatedSource);
+        await fetchHistory();
+      } catch (error) {
+        console.error('Analysis failed', error);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      if (!activeSource) {
+        setLoading(false);
+        return;
+      }
+
+      setMessages(prev => [...prev, { role: 'user', content: currentPrompt }]);
+
+      try {
+        const response = await sendChatMessage(activeSource.uid, currentPrompt);
+        setMessages(prev => [...prev, { role: 'assistant', content: response.answer }]);
+      } catch (error) {
+        console.error('Chat failed', error);
+        setMessages(prev => [...prev, { role: 'assistant', content: "Os dados extraídos da fonte são insuficientes para esta avaliação ou ocorreu um erro." }]);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -76,7 +116,12 @@ export default function ChatView() {
           {history.map((item) => (
             <button 
               key={item.uid}
-              onClick={() => setActiveSource(item)}
+              onClick={() => {
+                  if (!item) return;
+                  setActiveSource(item);
+                  setPrompt('');
+                  setMessages([]);
+              }}
               className={`w-full text-left px-3 py-3 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors flex justify-between items-center group ${activeSource?.uid === item.uid ? 'bg-blue-50' : ''}`}
             >
               <span className="truncate text-sm font-medium text-gray-700 group-hover:text-gray-900 flex-1">
@@ -107,7 +152,7 @@ export default function ChatView() {
           </span>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 flex justify-center" aria-live="polite" aria-atomic="true">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 flex justify-center">
           {!activeSource && !loading && (
             <div className="max-w-3xl w-full flex flex-col items-center justify-center text-center space-y-6 mt-12">
               <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
@@ -117,23 +162,6 @@ export default function ChatView() {
               <p className="text-gray-600 max-w-lg">
                 Cole a URL de uma matéria. O Cérebro Híbrido analisará padrões de exclusão e equidade.
               </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full mt-8">
-                <button 
-                    className="p-4 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 focus:ring-2 focus:ring-blue-600 transition-all text-left"
-                    onClick={() => setPrompt("https://example.com/noticia1")}
-                >
-                  <strong className="block text-gray-800 mb-1">Verificar Fatos ⚖️</strong>
-                  Extraia as alegações centrais.
-                </button>
-                <button 
-                    className="p-4 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 focus:ring-2 focus:ring-blue-600 transition-all text-left"
-                    onClick={() => setPrompt("https://example.com/noticia2")}
-                >
-                  <strong className="block text-gray-800 mb-1">Resumo Inclusivo 📝</strong>
-                  Quais vozes estão ausentes?
-                </button>
-              </div>
             </div>
           )}
 
@@ -144,16 +172,16 @@ export default function ChatView() {
              </div>
           )}
 
-          {activeSource && !loading && (
-              <div className="max-w-3xl w-full flex flex-col space-y-6 mt-8" role="log">
+          {activeSource && (
+              <div className="max-w-3xl w-full flex flex-col space-y-6 mt-8" aria-live="polite" role="log">
                 {/* User Prompt Bubble */}
                 <div className="self-end bg-gray-100 text-gray-900 px-6 py-4 rounded-2xl rounded-tr-sm max-w-[85%]">
                     <p className="text-sm break-all font-medium">
-                        URL Analisada: <a href={activeSource.url} target="_blank" rel="noreferrer" className="text-blue-600 underline focus:ring-2 focus:ring-blue-600">{activeSource.url}</a>
+                        URL Analisada: <a href={activeSource?.url} target="_blank" rel="noreferrer" className="text-blue-600 underline focus:ring-2 focus:ring-blue-600">{activeSource?.url}</a>
                     </p>
                 </div>
 
-                {/* AI Response Bubble */}
+                {/* AI Response Bubble - Initial Analysis */}
                 <div className="self-start flex flex-col w-full">
                     <div className="flex items-center gap-3 mb-2">
                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -163,7 +191,7 @@ export default function ChatView() {
                     </div>
                     
                     <div className="bg-white border border-gray-200 p-6 rounded-2xl rounded-tl-sm shadow-sm space-y-4">
-                        {activeSource.inclusion_score !== undefined ? (
+                        {activeSource?.inclusion_score !== undefined && activeSource?.inclusion_score !== null ? (
                             <div className="flex items-center gap-3 border-b border-gray-100 pb-4 mb-4">
                                 <div className="flex flex-col">
                                     <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Score de Inclusão</span>
@@ -184,12 +212,59 @@ export default function ChatView() {
                         
                         <div>
                             <h3 className="text-sm font-bold text-gray-900 mb-2">Análise Interseccional</h3>
-                            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                                {activeSource.reasoning || "Nenhuma justificativa disponível."}
-                            </p>
+                            <div className="space-y-3 text-gray-800 leading-relaxed [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&>p>strong]:text-gray-900 [&>h3]:font-bold [&>h3]:text-lg [&>h3]:mt-4">
+                                <ReactMarkdown>
+                                    {activeSource?.reasoning || "O detalhamento da análise não está disponível para esta fonte."}
+                                </ReactMarkdown>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                {/* Suggestion Cards if no messages yet */}
+                {messages.length === 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full mt-4">
+                    <button 
+                        className="p-4 border border-gray-200 bg-white rounded-xl text-sm text-gray-600 hover:bg-gray-50 focus:ring-2 focus:ring-blue-600 transition-all text-left shadow-sm"
+                        onClick={() => handleSubmit(undefined, "Verificar Fatos ⚖️")}
+                    >
+                      <strong className="block text-gray-800 mb-1">Verificar Fatos ⚖️</strong>
+                      Extraia as alegações centrais da matéria.
+                    </button>
+                    <button 
+                        className="p-4 border border-gray-200 bg-white rounded-xl text-sm text-gray-600 hover:bg-gray-50 focus:ring-2 focus:ring-blue-600 transition-all text-left shadow-sm"
+                        onClick={() => handleSubmit(undefined, "Quais vozes estão ausentes? 📝")}
+                    >
+                      <strong className="block text-gray-800 mb-1">Vozes Ausentes 📝</strong>
+                      Verifique exclusão ou viés de omissão.
+                    </button>
+                  </div>
+                ) : null}
+
+                {/* Chat Messages */}
+                {messages.map((msg, idx) => (
+                    msg.role === 'user' ? (
+                        <div key={idx} className="self-end bg-blue-600 text-white px-6 py-4 rounded-2xl rounded-tr-sm max-w-[85%] mt-6">
+                            <p className="text-sm font-medium whitespace-pre-wrap">{msg.content}</p>
+                        </div>
+                    ) : (
+                        <div key={idx} className="self-start flex flex-col w-full mt-6">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <Globe className="w-5 h-5 text-blue-600" />
+                                </div>
+                                <span className="font-semibold text-gray-800">Cérebro Híbrido</span>
+                            </div>
+                            <div className="bg-white border border-gray-200 p-6 rounded-2xl rounded-tl-sm shadow-sm space-y-4">
+                                <div className="space-y-3 text-gray-800 leading-relaxed [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&>p>strong]:text-gray-900 [&>h3]:font-bold [&>h3]:text-lg [&>h3]:mt-4">
+                                    <ReactMarkdown>
+                                        {msg.content}
+                                    </ReactMarkdown>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                ))}
               </div>
           )}
         </div>
@@ -198,10 +273,10 @@ export default function ChatView() {
           <div className="max-w-3xl mx-auto relative">
             <form onSubmit={handleSubmit}>
               <input 
-                type="url"
+                type="text"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Cole uma URL para analisar..."
+                placeholder={activeSource ? "Faça uma pergunta sobre a análise..." : "Cole uma URL para analisar..."}
                 disabled={loading}
                 required
                 className="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-2xl py-4 pl-4 pr-14 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-sm disabled:opacity-50 transition-shadow"
