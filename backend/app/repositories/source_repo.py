@@ -29,7 +29,7 @@ class SourceRepository:
             name=node.get("name") or "Unknown",
             url=node.get("url"),
             inclusion_score=node.get("inclusion_score"),
-            notes=node.get("notes"),
+            reasoning=node.get("reasoning"),
             uid=node.get("uid") or "unknown",
             created_at=created_at,
             suggested_prompts=node.get("suggested_prompts") or []
@@ -58,12 +58,12 @@ class SourceRepository:
             s.uid = randomUUID(),
             s.name = $name,
             s.inclusion_score = $inclusion_score,
-            s.notes = $notes,
+            s.reasoning = $reasoning,
             s.created_at = datetime()
         ON MATCH SET
             s.name = $name,
             s.inclusion_score = $inclusion_score,
-            s.notes = $notes,
+            s.reasoning = $reasoning,
             s.last_updated = datetime()
         RETURN s
         """
@@ -127,7 +127,7 @@ class SourceRepository:
         RETURN 
             s.inclusion_score AS inclusion_score,
             s.suggested_prompts AS suggested_prompts,
-            s.summary AS summary,
+            s.reasoning AS reasoning,
             s.last_analyzed_at AS last_analyzed_at
         """
         async with self.driver.session() as session:
@@ -158,7 +158,7 @@ class SourceRepository:
             return {
                 "inclusion_score": record["inclusion_score"],
                 "suggested_prompts": record["suggested_prompts"] or [],
-                "summary": record["summary"] or "Cached analysis.",
+                "reasoning": record["reasoning"] or "Análise em cache.",
             }
 
     # ─── Updates ───────────────────────────────────────────────
@@ -172,23 +172,13 @@ class SourceRepository:
         async with self.driver.session() as session:
             await session.run(query, uid=uid, content=content)
 
-    async def update_summary(self, uid: str, summary: str):
-        """Updates the summary of a Source node."""
-        query = """
-        MATCH (s:Source {uid: $uid})
-        SET s.summary = $summary, s.last_summarized_at = datetime()
-        RETURN s
-        """
-        async with self.driver.session() as session:
-            await session.run(query, uid=uid, summary=summary)
-
-    async def update_analysis_results(self, uid: str, inclusion_score: int, suggested_prompts: List[str], summary: str = ""):
-        """Updates the inclusion score, suggested prompts, and summary of a Source node."""
+    async def update_analysis_results(self, uid: str, inclusion_score: int, suggested_prompts: List[str], reasoning: str = ""):
+        """Updates the inclusion score, suggested prompts, and reasoning of a Source node."""
         query = """
         MATCH (s:Source {uid: $uid})
         SET s.inclusion_score = $inclusion_score, 
             s.suggested_prompts = $suggested_prompts,
-            s.summary = $summary,
+            s.reasoning = $reasoning,
             s.last_analyzed_at = datetime()
         RETURN s
         """
@@ -198,7 +188,7 @@ class SourceRepository:
                 uid=uid,
                 inclusion_score=inclusion_score,
                 suggested_prompts=suggested_prompts,
-                summary=summary,
+                reasoning=reasoning,
             )
             
     async def get_source_content(self, uid: str) -> Optional[str]:

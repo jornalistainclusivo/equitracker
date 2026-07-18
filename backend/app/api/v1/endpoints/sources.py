@@ -4,7 +4,7 @@ from app.schemas.source import SourceCreate, SourceResponse
 from app.schemas.analysis import AnalysisResult
 from app.repositories.source_repo import SourceRepository
 from app.services.scraper import SovereignScraper
-from app.services.llm import OllamaService
+from app.services.llm import DynamicLLMService
 import logging
 
 router = APIRouter()
@@ -64,7 +64,7 @@ async def crawl_source(uid: str):
 @router.post("/{uid}/summarize")
 async def summarize_source(uid: str):
     """
-    Summarize a source by UID using Ollama.
+    Summarize a source by UID using dynamic LLM service.
     """
     try:
         source = await repo.get_source_by_uid(uid)
@@ -75,10 +75,10 @@ async def summarize_source(uid: str):
         if not content:
              raise HTTPException(status_code=400, detail="Source has no content to summarize. Please crawl it first.")
 
-        summary = await OllamaService.summarize(content)
-        await repo.update_summary(uid, summary)
+        reasoning = await DynamicLLMService.summarize(content)
+        await repo.update_analysis_results(uid, source.inclusion_score or 50, source.suggested_prompts or [], reasoning)
         
-        return {"status": "success", "summary_length": len(summary), "preview": summary[:100] + "..."}
+        return {"status": "success", "summary_length": len(reasoning), "preview": reasoning[:100] + "..."}
     except HTTPException:
         raise
     except Exception:
@@ -89,7 +89,7 @@ async def summarize_source(uid: str):
 async def analyze_source(uid: str, force: bool = Query(False, description="Force re-analysis, bypassing cache")):
     """
     Analyze inclusion of a source by UID.
-    Uses Neo4j cache to avoid redundant Ollama calls.
+    Uses Neo4j cache to avoid redundant LLM calls.
     Pass ?force=true to bypass cache and force re-analysis.
     """
     from app.services.knowledge_base import KnowledgeBase
@@ -106,11 +106,11 @@ async def analyze_source(uid: str, force: bool = Query(False, description="Force
         if not force:
             cached = await repo.get_cached_analysis(uid)
             if cached:
-                logger.info(f"Cache HIT for source {uid}. Skipping Ollama.")
+                logger.info(f"Cache HIT for source {uid}. Skipping LLM.")
                 return {
                     "inclusion_score": cached["inclusion_score"],
                     "suggested_prompts": cached["suggested_prompts"],
-                    "summary": cached["summary"],
+                    "reasoning": cached["reasoning"],
                     "cached": True,
                 }
 
@@ -126,20 +126,20 @@ async def analyze_source(uid: str, force: bool = Query(False, description="Force
         await kb.vectorize_and_store(content, uid)
 
         # 3. Inclusion Analysis (LLM)
-        analysis_result = await OllamaService.analyze_article(content)
+        analysis_result = await DynamicLLMService.analyze_article(content)
         
-        # 4. Save Results (now includes summary for cache)
+        # 4. Save Results (now includes reasoning for cache)
         await repo.update_analysis_results(
             uid, 
             analysis_result.inclusion_score, 
             analysis_result.suggested_prompts,
-            analysis_result.summary,
+            analysis_result.reasoning,
         )
         
         return {
             "inclusion_score": analysis_result.inclusion_score,
             "suggested_prompts": analysis_result.suggested_prompts,
-            "summary": analysis_result.summary,
+            "reasoning": analysis_result.reasoning,
             "cached": False,
         }
     except HTTPException:

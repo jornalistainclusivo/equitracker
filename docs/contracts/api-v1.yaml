@@ -1,0 +1,62 @@
+openapi: 3.1.0
+info:
+  title: EquiTracker API
+  version: 1.0.0
+paths:
+  /api/v1/sources/analyze:
+    post:
+      summary: Start analysis of a source
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceAnalysisResponse'
+  /api/v1/sources/history:
+    get:
+      summary: Get history of analyzed sources
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SourceHistoryItem'
+components:
+  schemas:
+    SourceAnalysisResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+        inclusion_score:
+          type: integer
+        reasoning:
+          type: string
+    SourceHistoryItem:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+        title:
+          type: string
+        inclusion_score:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
