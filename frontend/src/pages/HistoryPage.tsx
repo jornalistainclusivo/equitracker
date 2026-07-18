@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, Globe, Trash2, ArrowLeft, Eye, AlertTriangle } from 'lucide-react';
+import { ShieldAlert, Globe, Trash2, Eye } from 'lucide-react';
 import api from '../services/api';
 import { Source } from '../types';
 import StatusBadge from '../components/StatusBadge';
@@ -43,17 +43,6 @@ const HistoryPage = () => {
         } catch (err) {
             console.error("Failed to delete source:", err);
             setError("Erro ao excluir fonte.");
-        }
-    };
-
-    const handleClearAll = async () => {
-        if (!confirm("Tem certeza que deseja excluir todas as fontes?")) return;
-        try {
-            await api.delete(`/sources/`);
-            setSources([]);
-        } catch (err) {
-            console.error("Failed to clear sources:", err);
-            setError("Erro ao limpar fontes.");
         }
     };
 

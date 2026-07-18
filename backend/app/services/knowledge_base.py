@@ -67,5 +67,62 @@ class KnowledgeBase:
         MATCH (c:Chunk {source_uid: $uid})
         MERGE (s)-[:HAS_CHUNK]->(c)
         """
-        
         graph.query(query, params={"uid": source_uid})
+
+    async def hybrid_search(self, query: str, source_uid: str, top_k: int = 3) -> str:
+        """
+        Performs a hybrid search (Vector + Graph) to build context for a query.
+        Returns a combined context string.
+        """
+        # 1. Vector Search for relevant chunks
+        vector_store = Neo4jVector.from_existing_index(
+            embedding=self.embeddings,
+            url=self.url,
+            username=self.username,
+            password=self.password,
+            index_name="news_vector",
+        )
+        
+        # Filter by source_uid if possible, or just search and filter in memory
+        # In langchain Neo4jVector we can pass a filter dict if supported, but let's do a basic search
+        # and filter by metadata
+        docs = vector_store.similarity_search(query, k=top_k * 3) # fetch more to filter
+        
+        relevant_chunks = [doc.page_content for doc in docs if doc.metadata.get("source_uid") == source_uid][:top_k]
+        
+        # 2. Graph Traversal for Entities
+        graph = Neo4jGraph(
+            url=self.url,
+            username=self.username,
+            password=self.password
+        )
+        
+        cypher_query = """
+        MATCH (s:Source {uid: $uid})-[:MENTIONS]->(e:Entity)
+        OPTIONAL MATCH (e)-[r]->(other:Entity)
+        RETURN e.name AS entity, e.type AS type, type(r) AS rel, other.name AS target
+        LIMIT 50
+        """
+        
+        results = graph.query(cypher_query, params={"uid": source_uid})
+        
+        # 3. Combine Context
+        context_parts = []
+        if relevant_chunks:
+            context_parts.append("TRECHOS RELEVANTES DO TEXTO:")
+            for i, chunk in enumerate(relevant_chunks, 1):
+                context_parts.append(f"[{i}] {chunk}")
+                
+        if results:
+            context_parts.append("\nENTIDADES E RELACIONAMENTOS EXTRAÍDOS (GRAFO):")
+            entities_added = set()
+            for row in results:
+                entity = f"{row['entity']} ({row['type']})"
+                if entity not in entities_added:
+                    context_parts.append(f"- {entity}")
+                    entities_added.add(entity)
+                
+                if row['rel'] and row['target']:
+                    context_parts.append(f"  -> {row['rel']} -> {row['target']}")
+                    
+        return "\n".join(context_parts)

@@ -228,3 +228,42 @@ class SourceRepository:
             result = await session.run(query)
             record = await result.single()
             return record["deleted_count"]
+
+    # ─── GraphRAG ──────────────────────────────────────────────
+    async def store_extraction(self, uid: str, extraction: 'GraphExtraction'):
+        """Stores extracted entities and relationships in Neo4j and links them to the Source."""
+        async with self.driver.session() as session:
+            # 1. Create entities and link to source
+            for entity in extraction.entities:
+                query_entity = """
+                MATCH (s:Source {uid: $uid})
+                MERGE (e:Entity {name: $name})
+                ON CREATE SET e.type = $type, e.description = $description
+                MERGE (s)-[:MENTIONS]->(e)
+                """
+                await session.run(
+                    query_entity, 
+                    uid=uid, 
+                    name=entity.name, 
+                    type=entity.type, 
+                    description=entity.description
+                )
+            
+            # 2. Create relationships
+            for rel in extraction.relationships:
+                # Cypher doesn't allow parameterized relationship types, so we must sanitize and format
+                rel_type = "".join([c for c in rel.type.upper() if c.isalnum() or c == "_"])
+                if not rel_type:
+                    rel_type = "RELATED_TO"
+                    
+                query_rel = f"""
+                MATCH (src:Entity {{name: $source_name}})
+                MATCH (tgt:Entity {{name: $target_name}})
+                MERGE (src)-[:{rel_type}]->(tgt)
+                """
+                await session.run(
+                    query_rel,
+                    source_name=rel.source,
+                    target_name=rel.target
+                )
+

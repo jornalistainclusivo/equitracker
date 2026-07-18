@@ -1,25 +1,25 @@
-from langchain_ollama import ChatOllama
-from langchain_core.prompts import ChatPromptTemplate
+from app.services.llm import DynamicLLMService
 from langchain_core.output_parsers import PydanticOutputParser
-from app.core.config import settings
 from app.schemas.graph import GraphExtraction
+import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 class EntityExtractor:
-    def __init__(self, model: str = None):
+    def __init__(self):
         """
-        Initialize the EntityExtractor with a local Ollama model.
-        Defaults to settings.OLLAMA_MODEL (phi3).
+        Initialize the EntityExtractor using DynamicLLMService.
         """
-        self.llm = ChatOllama(
-            base_url=settings.OLLAMA_BASE_URL,
-            model=model or settings.OLLAMA_MODEL,
-            format="json",
-            temperature=0
-        )
         self.parser = PydanticOutputParser(pydantic_object=GraphExtraction)
         
-        self.prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are an advanced Information Extraction AI.
+    async def extract(self, text: str) -> GraphExtraction:
+        """
+        Extract entities and relationships from the given text chunk.
+        """
+        format_instructions = self.parser.get_format_instructions()
+        
+        system_prompt = f"""You are an advanced Information Extraction AI.
 Extract entities (PERSON, ORG, LOCATION, TOPIC, EVENT) and relationships from the text.
 Return STRICT JSON matching the following schema:
 {format_instructions}
@@ -42,16 +42,21 @@ EXAMPLE OUTPUT:
         {{"source": "I/O conference", "target": "Mountain View", "type": "LOCATED_AT"}}
     ]
 }}
-"""),
-            ("human", "{text}")
-        ])
-
-    async def extract(self, text: str) -> GraphExtraction:
-        """
-        Extract entities and relationships from the given text chunk.
-        """
-        chain = self.prompt | self.llm | self.parser
-        return await chain.ainvoke({
-            "text": text,
-            "format_instructions": self.parser.get_format_instructions()
-        })
+"""
+        
+        try:
+            generated_text = await DynamicLLMService._call_provider(system_prompt, text, "json")
+            
+            # Clean up potential markdown formatting
+            if "```json" in generated_text:
+                generated_text = generated_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in generated_text:
+                generated_text = generated_text.split("```")[0].strip()
+                
+            data = json.loads(generated_text)
+            
+            return GraphExtraction(**data)
+        except Exception as e:
+            logger.error(f"Failed to extract entities: {e}")
+            # Return empty extraction on failure
+            return GraphExtraction(entities=[], relationships=[])
