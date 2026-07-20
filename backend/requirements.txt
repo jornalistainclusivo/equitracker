@@ -24,4 +24,4 @@ html2text>=2024.2.0
 playwright==1.58.0
 pytest==9.0.2
 html2text==2024.2.26
-langchain-neo4j==0.9.0
+langchain-neo4j==0.10.0
