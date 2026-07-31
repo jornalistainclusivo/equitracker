@@ -31,3 +31,7 @@ relatorio_sec_devops_*.md
 
 # Cache Files
 *.tsbuildinfo
+
+# Local Developer Files
+pr_body.md
+.agents/
