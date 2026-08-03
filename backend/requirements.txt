@@ -1,9 +1,9 @@
 # Core Framework
 fastapi==0.141.1
-uvicorn[standard]==0.51.0
+uvicorn[standard]==0.52.0
 
 # Configuration & Utilities
-python-dotenv==1.2.1
+python-dotenv==1.2.2
 pydantic-settings==2.14.2
 
 # Database
