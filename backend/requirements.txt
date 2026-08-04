@@ -20,7 +20,7 @@ langchain-ollama>=1.1.0
 # Dependencies
 httpx==0.28.1
 beautifulsoup4>=4.15.0
-playwright==1.61.0
+playwright==1.62.0
 pytest==9.1.1
 html2text==2024.2.26
 langchain-neo4j==0.10.0
