@@ -4,7 +4,7 @@ uvicorn[standard]==0.52.0
 
 # Configuration & Utilities
 python-dotenv==1.2.2
-pydantic-settings==2.14.2
+pydantic-settings==2.15.0
 
 # Database
 neo4j==6.1.0
